@@ -9,3 +9,7 @@ class CreateProjectSerializer(serializers.Serializer):
 class UpdateProjectSerializer(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=False)
     description = serializers.CharField(required=False, allow_blank=True)
+
+
+class ColumnSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, allow_blank=False)

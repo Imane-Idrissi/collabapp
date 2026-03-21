@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from django.db.models import Count, Subquery
 from projects.models import Column, InviteToken, Project, ProjectMember
 from django.shortcuts import get_object_or_404
-from projects.serializers import CreateProjectSerializer, UpdateProjectSerializer
+from projects.serializers import ColumnSerializer, CreateProjectSerializer, UpdateProjectSerializer
 
 DEFAULT_COLUMNS = [
     ('To Do', 0),
@@ -152,3 +152,79 @@ class JoinProjectView(APIView):
             {'project': {'id': project.id, 'name': project.name}},
             status=status.HTTP_200_OK,
         )
+
+
+def _check_project_membership(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+        return project, Response(
+            {'detail': 'You are not a member of this project.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return project, None
+
+
+class ColumnListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        serializer = ColumnSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        position = Column.objects.filter(project=project).count()
+        column = Column.objects.create(
+            project=project,
+            name=serializer.validated_data['name'],
+            position=position,
+        )
+
+        return Response({
+            'id': column.id,
+            'name': column.name,
+            'position': column.position,
+        }, status=status.HTTP_201_CREATED)
+
+
+class ColumnDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, project_id, column_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        column = get_object_or_404(Column, id=column_id, project=project)
+
+        serializer = ColumnSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        column.name = serializer.validated_data['name']
+        column.save()
+
+        return Response({
+            'id': column.id,
+            'name': column.name,
+            'position': column.position,
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, project_id, column_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        column = get_object_or_404(Column, id=column_id, project=project)
+
+        if column.tasks.exists():
+            return Response(
+                {'detail': 'Column is not empty.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        column.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
