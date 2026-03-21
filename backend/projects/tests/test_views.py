@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
-from projects.models import Column, InviteToken, Project, ProjectMember
+from projects.models import Column, InviteToken, Project, ProjectMember, Task
 
 
 @pytest.mark.django_db
@@ -310,3 +310,143 @@ class TestJoinProject:
         assert ProjectMember.objects.filter(project=self.project, user=self.joiner).exists()
         assert response.data['project']['id'] == self.project.id
         assert response.data['project']['name'] == 'Team Project'
+
+
+@pytest.mark.django_db
+class TestCreateColumn:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.url = f'/api/projects/{self.project.id}/columns'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_create_column_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.post(self.url, {'name': 'New Column'})
+        assert response.status_code == 401
+
+    def test_create_column_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.post(self.url, {'name': 'New Column'})
+        assert response.status_code == 403
+
+    def test_create_column_project_not_found_returns_404(self):
+        response = self.client.post('/api/projects/99999/columns', {'name': 'New Column'})
+        assert response.status_code == 404
+
+    def test_create_column_missing_name_returns_400(self):
+        response = self.client.post(self.url, {})
+        assert response.status_code == 400
+
+    def test_create_column_empty_name_returns_400(self):
+        response = self.client.post(self.url, {'name': ''})
+        assert response.status_code == 400
+
+    def test_create_column_success(self):
+        response = self.client.post(self.url, {'name': 'New Column'})
+        assert response.status_code == 201
+        assert response.data['name'] == 'New Column'
+        assert response.data['position'] == 0
+        assert 'id' in response.data
+
+    def test_create_column_sets_next_position(self):
+        Column.objects.create(project=self.project, name='Existing', position=0)
+        response = self.client.post(self.url, {'name': 'Second'})
+        assert response.data['position'] == 1
+
+
+@pytest.mark.django_db
+class TestRenameColumn:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.column = Column.objects.create(project=self.project, name='To Do', position=0)
+        self.url = f'/api/projects/{self.project.id}/columns/{self.column.id}'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_rename_column_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.patch(self.url, {'name': 'New Name'})
+        assert response.status_code == 401
+
+    def test_rename_column_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.patch(self.url, {'name': 'New Name'})
+        assert response.status_code == 403
+
+    def test_rename_column_not_found_returns_404(self):
+        response = self.client.patch(
+            f'/api/projects/{self.project.id}/columns/99999', {'name': 'New Name'}
+        )
+        assert response.status_code == 404
+
+    def test_rename_column_empty_name_returns_400(self):
+        response = self.client.patch(self.url, {'name': ''}, format='json')
+        assert response.status_code == 400
+
+    def test_rename_column_success(self):
+        response = self.client.patch(self.url, {'name': 'Doing'})
+        assert response.status_code == 200
+        assert response.data['name'] == 'Doing'
+        assert response.data['id'] == self.column.id
+        assert response.data['position'] == 0
+        self.column.refresh_from_db()
+        assert self.column.name == 'Doing'
+
+
+@pytest.mark.django_db
+class TestDeleteColumn:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.column = Column.objects.create(project=self.project, name='To Do', position=0)
+        self.url = f'/api/projects/{self.project.id}/columns/{self.column.id}'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_delete_column_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.delete(self.url)
+        assert response.status_code == 401
+
+    def test_delete_column_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.delete(self.url)
+        assert response.status_code == 403
+
+    def test_delete_column_not_found_returns_404(self):
+        response = self.client.delete(f'/api/projects/{self.project.id}/columns/99999')
+        assert response.status_code == 404
+
+    def test_delete_column_with_tasks_returns_400(self):
+        Task.objects.create(
+            column=self.column, project=self.project, name='A task',
+            position=0, creator=self.user,
+        )
+        response = self.client.delete(self.url)
+        assert response.status_code == 400
+
+    def test_delete_column_success(self):
+        response = self.client.delete(self.url)
+        assert response.status_code == 204
+        assert not Column.objects.filter(id=self.column.id).exists()
