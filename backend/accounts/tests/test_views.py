@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest.mock import patch
 from django.utils import timezone
 from rest_framework.test import APIClient
-from accounts.models import User, EmailVerifyToken
+from accounts.models import User, EmailVerifyToken, PasswordResetToken
 
 SIGNUP_URL = '/api/auth/signup'
 
@@ -326,3 +326,94 @@ class TestVerifyEmail:
         self.client.get(self.url, {'token': 'abc123'})
         response = self.client.get(self.url, {'token': 'abc123'})
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+class TestForgotPassword:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = '/api/auth/forgot-password'
+        self.verified_user = User.objects.create_user(
+            email='verified@example.com',
+            name='Verified',
+            password='StrongPass1',
+            email_verified=True,
+        )
+        self.unverified_user = User.objects.create_user(
+            email='unverified@example.com',
+            name='Unverified',
+            password='StrongPass1',
+            email_verified=False,
+        )
+
+    # --- Step 2: Validate fields ---
+
+    def test_forgot_password_with_missing_email_returns_400(self):
+        response = self.client.post(self.url, {})
+        assert response.status_code == 400
+
+    def test_forgot_password_with_empty_email_returns_400(self):
+        response = self.client.post(self.url, {'email': ''})
+        assert response.status_code == 400
+
+    # --- Step 3: Look up user ---
+
+    @patch('accounts.views.send_verification_email')
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_with_nonexistent_email_returns_200(self, mock_reset, mock_verify):
+        response = self.client.post(self.url, {'email': 'nobody@example.com'})
+        assert response.status_code == 200
+        assert 'password reset link' in response.data['message'].lower()
+
+    # --- Step 4: Verified user ---
+
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_verified_user_creates_reset_token(self, mock_send):
+        self.client.post(self.url, {'email': 'verified@example.com'})
+        assert PasswordResetToken.objects.filter(user=self.verified_user).count() == 1
+
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_verified_user_sends_reset_email(self, mock_send):
+        self.client.post(self.url, {'email': 'verified@example.com'})
+        mock_send.assert_called_once()
+
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_verified_user_returns_reset_message(self, mock_send):
+        response = self.client.post(self.url, {'email': 'verified@example.com'})
+        assert response.status_code == 200
+        assert 'password reset link' in response.data['message'].lower()
+
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_reset_token_expires_in_one_hour(self, mock_send):
+        self.client.post(self.url, {'email': 'verified@example.com'})
+        token = PasswordResetToken.objects.get(user=self.verified_user)
+        expected = timezone.now() + timedelta(hours=1)
+        assert abs((token.expires_at - expected).total_seconds()) < 5
+
+    # --- Step 4: Unverified user ---
+
+    @patch('accounts.views.send_verification_email')
+    def test_forgot_password_unverified_user_creates_verify_token(self, mock_send):
+        self.client.post(self.url, {'email': 'unverified@example.com'})
+        assert EmailVerifyToken.objects.filter(user=self.unverified_user).count() == 1
+
+    @patch('accounts.views.send_verification_email')
+    def test_forgot_password_unverified_user_sends_verification_email(self, mock_send):
+        self.client.post(self.url, {'email': 'unverified@example.com'})
+        mock_send.assert_called_once()
+
+    @patch('accounts.views.send_verification_email')
+    def test_forgot_password_unverified_user_returns_verify_message(self, mock_send):
+        response = self.client.post(self.url, {'email': 'unverified@example.com'})
+        assert response.status_code == 200
+        assert 'verification email' in response.data['message'].lower()
+
+    # --- Step 5: Security ---
+
+    @patch('accounts.views.send_password_reset_email')
+    def test_forgot_password_response_does_not_reveal_email_existence(self, mock_send):
+        response_nonexistent = self.client.post(self.url, {'email': 'nobody@example.com'})
+        response_verified = self.client.post(self.url, {'email': 'verified@example.com'})
+        assert response_nonexistent.status_code == response_verified.status_code
+        assert response_nonexistent.data['message'] == response_verified.data['message']
