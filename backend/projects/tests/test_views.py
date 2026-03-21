@@ -204,7 +204,7 @@ class TestUpdateProject:
     # --- Validation ---
 
     def test_update_project_with_empty_name_returns_400(self):
-        response = self.client.patch(self.url, {'name': ''})
+        response = self.client.patch(self.url, {'name': ''}, format='json')
         assert response.status_code == 400
 
     # --- Update ---

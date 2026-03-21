@@ -5,7 +5,8 @@ from rest_framework.views import APIView
 
 from django.db.models import Count, Subquery
 from projects.models import Column, Project, ProjectMember
-from projects.serializers import CreateProjectSerializer
+from django.shortcuts import get_object_or_404
+from projects.serializers import CreateProjectSerializer, UpdateProjectSerializer
 
 DEFAULT_COLUMNS = [
     ('To Do', 0),
@@ -66,3 +67,34 @@ class ProjectListCreateView(APIView):
             'description': project.description,
             'created_at': project.created_at,
         }, status=status.HTTP_201_CREATED)
+
+
+class ProjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+
+        if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+            return Response(
+                {'detail': 'You are not a member of this project.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = UpdateProjectSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        if 'name' in data:
+            project.name = data['name']
+        if 'description' in data:
+            project.description = data['description']
+        project.save()
+
+        return Response({
+            'id': project.id,
+            'name': project.name,
+            'description': project.description,
+            'created_at': project.created_at,
+        }, status=status.HTTP_200_OK)
