@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
-from projects.models import Project, ProjectMember, Column
+from projects.models import Column, InviteToken, Project, ProjectMember
 
 
 @pytest.mark.django_db
@@ -230,3 +230,83 @@ class TestUpdateProject:
         assert response.data['description'] == 'New desc'
         assert 'id' in response.data
         assert 'created_at' in response.data
+
+
+@pytest.mark.django_db
+class TestGenerateInvite:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.url = f'/api/projects/{self.project.id}/invites'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_generate_invite_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.post(self.url)
+        assert response.status_code == 401
+
+    def test_generate_invite_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.post(self.url)
+        assert response.status_code == 403
+
+    def test_generate_invite_project_not_found_returns_404(self):
+        response = self.client.post('/api/projects/99999/invites')
+        assert response.status_code == 404
+
+    def test_generate_invite_creates_token(self):
+        response = self.client.post(self.url)
+        assert response.status_code == 201
+        assert 'token' in response.data
+        assert InviteToken.objects.filter(project=self.project).exists()
+
+
+@pytest.mark.django_db
+class TestJoinProject:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email='owner@example.com', name='Owner', password='StrongPass1',
+        )
+        self.project = _create_project(self.owner, 'Team Project')
+        self.invite = InviteToken.objects.create(project=self.project, token='invite123')
+        self.joiner = User.objects.create_user(
+            email='joiner@example.com', name='Joiner', password='StrongPass1',
+        )
+        self.url = '/api/projects/join'
+        token = str(RefreshToken.for_user(self.joiner).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_join_project_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.post(self.url, {'token': 'invite123'})
+        assert response.status_code == 401
+
+    def test_join_project_missing_token_returns_400(self):
+        response = self.client.post(self.url, {})
+        assert response.status_code == 400
+
+    def test_join_project_invalid_token_returns_400(self):
+        response = self.client.post(self.url, {'token': 'nonexistent'})
+        assert response.status_code == 400
+
+    def test_join_project_already_member_returns_200(self):
+        ProjectMember.objects.create(project=self.project, user=self.joiner)
+        response = self.client.post(self.url, {'token': 'invite123'})
+        assert response.status_code == 200
+        assert 'Already a member' in response.data['message']
+
+    def test_join_project_success_creates_member(self):
+        response = self.client.post(self.url, {'token': 'invite123'})
+        assert response.status_code == 200
+        assert ProjectMember.objects.filter(project=self.project, user=self.joiner).exists()
+        assert response.data['project']['id'] == self.project.id
+        assert response.data['project']['name'] == 'Team Project'
