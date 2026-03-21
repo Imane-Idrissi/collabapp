@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.db.models import Count, Subquery
 from projects.models import Column, Project, ProjectMember
 from projects.serializers import CreateProjectSerializer
 
@@ -13,8 +14,34 @@ DEFAULT_COLUMNS = [
 ]
 
 
-class CreateProjectView(APIView):
+class ProjectListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_project_ids = ProjectMember.objects.filter(
+            user=request.user,
+        ).values_list('project_id', flat=True)
+        projects = Project.objects.filter(
+            id__in=user_project_ids,
+        ).annotate(
+            member_count=Count('members'),
+        ).order_by('-created_at')
+
+        search = request.query_params.get('search')
+        if search:
+            projects = projects.filter(name__icontains=search)
+
+        data = [
+            {
+                'id': p.id,
+                'name': p.name,
+                'description': p.description,
+                'member_count': p.member_count,
+                'created_at': p.created_at,
+            }
+            for p in projects
+        ]
+        return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = CreateProjectSerializer(data=request.data)
