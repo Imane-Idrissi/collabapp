@@ -1,11 +1,14 @@
 from django.urls import path
 from projects.views import (
+    BoardView,
     ColumnDetailView,
     ColumnListCreateView,
     GenerateInviteView,
     JoinProjectView,
     ProjectDetailView,
     ProjectListCreateView,
+    TaskDetailView,
+    TaskListCreateView,
 )
 
 urlpatterns = [
@@ -15,4 +18,7 @@ urlpatterns = [
     path('/<int:project_id>/invites', GenerateInviteView.as_view(), name='generate-invite'),
     path('/<int:project_id>/columns', ColumnListCreateView.as_view(), name='column-list-create'),
     path('/<int:project_id>/columns/<int:column_id>', ColumnDetailView.as_view(), name='column-detail'),
+    path('/<int:project_id>/tasks', TaskListCreateView.as_view(), name='task-list-create'),
+    path('/<int:project_id>/tasks/<int:task_id>', TaskDetailView.as_view(), name='task-detail'),
+    path('/<int:project_id>/board', BoardView.as_view(), name='board'),
 ]

@@ -6,9 +6,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.db.models import Count, Subquery
-from projects.models import Column, InviteToken, Project, ProjectMember
+from projects.models import Column, InviteToken, Project, ProjectMember, Task
 from django.shortcuts import get_object_or_404
-from projects.serializers import ColumnSerializer, CreateProjectSerializer, UpdateProjectSerializer
+from projects.serializers import (
+    ColumnSerializer,
+    CreateProjectSerializer,
+    CreateTaskSerializer,
+    UpdateProjectSerializer,
+    UpdateTaskSerializer,
+)
 
 DEFAULT_COLUMNS = [
     ('To Do', 0),
@@ -228,3 +234,131 @@ class ColumnDetailView(APIView):
 
         column.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _serialize_task(task):
+    return {
+        'id': task.id,
+        'name': task.name,
+        'description': task.description,
+        'priority': task.priority,
+        'position': task.position,
+        'column_id': task.column_id,
+        'creator_id': task.creator_id,
+        'is_ai_generated': task.is_ai_generated,
+        'version': task.version,
+        'created_at': task.created_at,
+    }
+
+
+class TaskListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        serializer = CreateTaskSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        column = Column.objects.filter(id=data['column_id'], project=project).first()
+        if not column:
+            return Response(
+                {'column_id': ['Invalid column.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        position = Task.objects.filter(column=column).count()
+        task = Task.objects.create(
+            column=column,
+            project=project,
+            name=data['name'],
+            description=data['description'],
+            priority=data['priority'],
+            position=position,
+            creator=request.user,
+        )
+
+        return Response(_serialize_task(task), status=status.HTTP_201_CREATED)
+
+
+class TaskDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, project_id, task_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        task = get_object_or_404(Task, id=task_id, project=project)
+
+        serializer = UpdateTaskSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+
+        if 'version' in data and task.version != data['version']:
+            return Response(
+                {'detail': 'Someone else edited this task. Reload to see the latest version.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        if 'name' in data:
+            task.name = data['name']
+        if 'description' in data:
+            task.description = data['description']
+        if 'priority' in data:
+            task.priority = data['priority']
+        if 'column_id' in data:
+            column = Column.objects.filter(id=data['column_id'], project=project).first()
+            if column:
+                task.column = column
+        if 'position' in data:
+            task.position = data['position']
+
+        task.version += 1
+        task.save()
+
+        return Response(_serialize_task(task), status=status.HTTP_200_OK)
+
+    def delete(self, request, project_id, task_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        task = get_object_or_404(Task, id=task_id, project=project)
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BoardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        columns = Column.objects.filter(
+            project=project,
+        ).prefetch_related('tasks').order_by('position')
+
+        data = {
+            'columns': [
+                {
+                    'id': col.id,
+                    'name': col.name,
+                    'position': col.position,
+                    'tasks': [
+                        _serialize_task(task)
+                        for task in col.tasks.order_by('position')
+                    ],
+                }
+                for col in columns
+            ],
+        }
+        return Response(data, status=status.HTTP_200_OK)
