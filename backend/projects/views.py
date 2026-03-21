@@ -1,10 +1,12 @@
+import uuid
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.db.models import Count, Subquery
-from projects.models import Column, Project, ProjectMember
+from projects.models import Column, InviteToken, Project, ProjectMember
 from django.shortcuts import get_object_or_404
 from projects.serializers import CreateProjectSerializer, UpdateProjectSerializer
 
@@ -98,3 +100,55 @@ class ProjectDetailView(APIView):
             'description': project.description,
             'created_at': project.created_at,
         }, status=status.HTTP_200_OK)
+
+
+class GenerateInviteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+
+        if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+            return Response(
+                {'detail': 'You are not a member of this project.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        token = uuid.uuid4().hex
+        InviteToken.objects.create(project=project, token=token)
+
+        return Response({'token': token}, status=status.HTTP_201_CREATED)
+
+
+class JoinProjectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token_value = request.data.get('token')
+        if not token_value:
+            return Response(
+                {'token': ['This field is required.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        invite = InviteToken.objects.filter(token=token_value).first()
+        if not invite:
+            return Response(
+                {'token': ['Invalid invite token.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        project = invite.project
+
+        if ProjectMember.objects.filter(project=project, user=request.user).exists():
+            return Response(
+                {'message': 'Already a member.', 'project': {'id': project.id, 'name': project.name}},
+                status=status.HTTP_200_OK,
+            )
+
+        ProjectMember.objects.create(project=project, user=request.user)
+
+        return Response(
+            {'project': {'id': project.id, 'name': project.name}},
+            status=status.HTTP_200_OK,
+        )
