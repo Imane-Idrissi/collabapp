@@ -126,3 +126,40 @@ class LoginView(APIView):
                 'avatar_color': user.avatar_color,
             },
         }, status=status.HTTP_200_OK)
+
+
+class VerifyEmailView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        token_str = request.query_params.get('token')
+        if not token_str:
+            return Response(
+                {'detail': 'Token is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            token = EmailVerifyToken.objects.get(token=token_str)
+        except EmailVerifyToken.DoesNotExist:
+            return Response(
+                {'detail': 'Invalid token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if token.expires_at < timezone.now():
+            return Response(
+                {'detail': 'Token has expired.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = token.user
+        user.email_verified = True
+        user.save()
+        token.delete()
+
+        return Response(
+            {'message': 'Email verified successfully.'},
+            status=status.HTTP_200_OK,
+        )
