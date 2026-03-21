@@ -3,6 +3,7 @@ from datetime import timedelta
 from unittest.mock import patch
 from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User, EmailVerifyToken, PasswordResetToken
 
 SIGNUP_URL = '/api/auth/signup'
@@ -511,3 +512,94 @@ class TestResetPassword:
         response = self.client.post(self.url, self.valid_data)
         assert response.status_code == 200
         assert 'Password reset successfully' in response.data['message']
+
+
+@pytest.mark.django_db
+class TestUpdateEmail:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = '/api/auth/update-email'
+        self.user = User.objects.create_user(
+            email='old@example.com',
+            name='Imane',
+            password='StrongPass1',
+            email_verified=False,
+        )
+        self.old_token = EmailVerifyToken.objects.create(
+            user=self.user,
+            token='oldtoken',
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+    def _auth(self):
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    # --- Step 2: Check authentication ---
+
+    def test_update_email_without_auth_returns_401(self):
+        response = self.client.patch(self.url, {'email': 'new@example.com'})
+        assert response.status_code == 401
+
+    # --- Step 3: Check verification status ---
+
+    def test_update_email_verified_user_returns_403(self):
+        self.user.email_verified = True
+        self.user.save()
+        self._auth()
+        response = self.client.patch(self.url, {'email': 'new@example.com'})
+        assert response.status_code == 403
+
+    # --- Step 4: Validate fields ---
+
+    def test_update_email_with_missing_email_returns_400(self):
+        self._auth()
+        response = self.client.patch(self.url, {})
+        assert response.status_code == 400
+
+    def test_update_email_with_invalid_format_returns_400(self):
+        self._auth()
+        response = self.client.patch(self.url, {'email': 'not-an-email'})
+        assert response.status_code == 400
+
+    def test_update_email_with_taken_email_returns_400(self):
+        User.objects.create_user(
+            email='taken@example.com',
+            name='Other',
+            password='StrongPass1',
+        )
+        self._auth()
+        response = self.client.patch(self.url, {'email': 'taken@example.com'})
+        assert response.status_code == 400
+
+    # --- Step 5: Update email ---
+
+    @patch('accounts.views.send_verification_email')
+    def test_update_email_changes_user_email(self, mock_send):
+        self._auth()
+        self.client.patch(self.url, {'email': 'new@example.com'})
+        self.user.refresh_from_db()
+        assert self.user.email == 'new@example.com'
+
+    @patch('accounts.views.send_verification_email')
+    def test_update_email_deletes_old_tokens_creates_new(self, mock_send):
+        self._auth()
+        self.client.patch(self.url, {'email': 'new@example.com'})
+        assert not EmailVerifyToken.objects.filter(token='oldtoken').exists()
+        assert EmailVerifyToken.objects.filter(user=self.user).count() == 1
+
+    @patch('accounts.views.send_verification_email')
+    def test_update_email_sends_verification_email(self, mock_send):
+        self._auth()
+        self.client.patch(self.url, {'email': 'new@example.com'})
+        mock_send.assert_called_once()
+
+    # --- Step 6: Return response ---
+
+    @patch('accounts.views.send_verification_email')
+    def test_update_email_returns_200_with_message(self, mock_send):
+        self._auth()
+        response = self.client.patch(self.url, {'email': 'new@example.com'})
+        assert response.status_code == 200
+        assert 'new@example.com' in response.data['message']
