@@ -3,6 +3,8 @@ from unittest.mock import patch
 from rest_framework.test import APIClient
 from accounts.models import User, EmailVerifyToken
 
+SIGNUP_URL = '/api/auth/signup'
+
 
 @pytest.mark.django_db
 class TestSignup:
@@ -162,5 +164,106 @@ class TestSignup:
         response = self.client.post(self.url, self.valid_data)
         token = response.data['token']
         # Token should be a non-empty string with JWT format (3 dot-separated parts)
+        assert isinstance(token, str)
+        assert len(token.split('.')) == 3
+
+
+@pytest.mark.django_db
+class TestLogin:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = '/api/auth/login'
+        self.user = User.objects.create_user(
+            email='imane@example.com',
+            name='Imane',
+            password='StrongPass1',
+            avatar_color='#6366f1',
+        )
+
+    # --- Step 2: Validate fields ---
+
+    def test_login_with_valid_credentials_returns_200_and_token(self):
+        response = self.client.post(self.url, {
+            'email': 'imane@example.com',
+            'password': 'StrongPass1',
+        })
+        assert response.status_code == 200
+        assert 'token' in response.data
+        assert response.data['user']['id'] == self.user.id
+        assert response.data['user']['name'] == 'Imane'
+        assert response.data['user']['email'] == 'imane@example.com'
+        assert 'email_verified' in response.data['user']
+        assert response.data['user']['avatar_color'] == '#6366f1'
+
+    def test_login_with_empty_email_returns_400(self):
+        response = self.client.post(self.url, {
+            'email': '',
+            'password': 'StrongPass1',
+        })
+        assert response.status_code == 400
+        assert 'email' in response.data
+
+    def test_login_with_empty_password_returns_400(self):
+        response = self.client.post(self.url, {
+            'email': 'imane@example.com',
+            'password': '',
+        })
+        assert response.status_code == 400
+        assert 'password' in response.data
+
+    def test_login_with_missing_email_returns_400(self):
+        response = self.client.post(self.url, {
+            'password': 'StrongPass1',
+        })
+        assert response.status_code == 400
+        assert 'email' in response.data
+
+    def test_login_with_missing_password_returns_400(self):
+        response = self.client.post(self.url, {
+            'email': 'imane@example.com',
+        })
+        assert response.status_code == 400
+        assert 'password' in response.data
+
+    # --- Step 3: Authenticate user ---
+
+    def test_login_with_nonexistent_email_returns_401(self):
+        response = self.client.post(self.url, {
+            'email': 'nobody@example.com',
+            'password': 'StrongPass1',
+        })
+        assert response.status_code == 401
+        assert 'Invalid email or password' in str(response.data)
+
+    def test_login_with_wrong_password_returns_401(self):
+        response = self.client.post(self.url, {
+            'email': 'imane@example.com',
+            'password': 'WrongPassword1',
+        })
+        assert response.status_code == 401
+        assert 'Invalid email or password' in str(response.data)
+
+    def test_login_error_does_not_reveal_whether_email_exists(self):
+        response_no_email = self.client.post(self.url, {
+            'email': 'nobody@example.com',
+            'password': 'StrongPass1',
+        })
+        response_wrong_pass = self.client.post(self.url, {
+            'email': 'imane@example.com',
+            'password': 'WrongPassword1',
+        })
+        # Same status and same error message for both
+        assert response_no_email.status_code == response_wrong_pass.status_code
+        assert response_no_email.data == response_wrong_pass.data
+
+    # --- Step 5: Return response ---
+
+    def test_login_response_contains_valid_jwt(self):
+        response = self.client.post(self.url, {
+            'email': 'imane@example.com',
+            'password': 'StrongPass1',
+        })
+        token = response.data['token']
         assert isinstance(token, str)
         assert len(token.split('.')) == 3
