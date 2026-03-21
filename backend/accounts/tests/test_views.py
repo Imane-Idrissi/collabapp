@@ -417,3 +417,97 @@ class TestForgotPassword:
         response_verified = self.client.post(self.url, {'email': 'verified@example.com'})
         assert response_nonexistent.status_code == response_verified.status_code
         assert response_nonexistent.data['message'] == response_verified.data['message']
+
+
+@pytest.mark.django_db
+class TestResetPassword:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = '/api/auth/reset-password'
+        self.user = User.objects.create_user(
+            email='imane@example.com',
+            name='Imane',
+            password='OldPass123',
+        )
+        self.token = PasswordResetToken.objects.create(
+            user=self.user,
+            token='resettoken123',
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.valid_data = {
+            'token': 'resettoken123',
+            'password': 'NewPass123',
+            'confirm_password': 'NewPass123',
+        }
+
+    # --- Step 2: Validate fields ---
+
+    def test_reset_password_with_missing_token_returns_400(self):
+        data = {'password': 'NewPass123', 'confirm_password': 'NewPass123'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+        assert 'token' in response.data
+
+    def test_reset_password_with_missing_password_returns_400(self):
+        data = {'token': 'resettoken123', 'confirm_password': 'NewPass123'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+        assert 'password' in response.data
+
+    def test_reset_password_with_missing_confirm_password_returns_400(self):
+        data = {'token': 'resettoken123', 'password': 'NewPass123'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+        assert 'confirm_password' in response.data
+
+    def test_reset_password_with_mismatched_passwords_returns_400(self):
+        data = {**self.valid_data, 'confirm_password': 'Different1'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+        assert 'confirm_password' in response.data
+
+    def test_reset_password_with_weak_password_returns_400(self):
+        data = {**self.valid_data, 'password': 'abc', 'confirm_password': 'abc'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+        assert 'password' in response.data
+
+    # --- Step 3: Validate token ---
+
+    def test_reset_password_with_invalid_token_returns_400(self):
+        data = {**self.valid_data, 'token': 'nonexistent'}
+        response = self.client.post(self.url, data)
+        assert response.status_code == 400
+
+    def test_reset_password_with_expired_token_returns_400(self):
+        self.token.expires_at = timezone.now() - timedelta(hours=1)
+        self.token.save()
+        response = self.client.post(self.url, self.valid_data)
+        assert response.status_code == 400
+
+    def test_reset_password_with_used_token_returns_400(self):
+        self.token.used = True
+        self.token.save()
+        response = self.client.post(self.url, self.valid_data)
+        assert response.status_code == 400
+
+    # --- Step 4: Reset password ---
+
+    def test_reset_password_changes_user_password(self):
+        self.client.post(self.url, self.valid_data)
+        self.user.refresh_from_db()
+        assert not self.user.check_password('OldPass123')
+        assert self.user.check_password('NewPass123')
+
+    def test_reset_password_marks_token_as_used(self):
+        self.client.post(self.url, self.valid_data)
+        self.token.refresh_from_db()
+        assert self.token.used is True
+
+    # --- Step 5: Return response ---
+
+    def test_reset_password_with_valid_data_returns_200(self):
+        response = self.client.post(self.url, self.valid_data)
+        assert response.status_code == 200
+        assert 'Password reset successfully' in response.data['message']
