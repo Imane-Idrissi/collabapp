@@ -1,5 +1,7 @@
 import pytest
+from datetime import timedelta
 from unittest.mock import patch
+from django.utils import timezone
 from rest_framework.test import APIClient
 from accounts.models import User, EmailVerifyToken
 
@@ -267,3 +269,60 @@ class TestLogin:
         token = response.data['token']
         assert isinstance(token, str)
         assert len(token.split('.')) == 3
+
+
+@pytest.mark.django_db
+class TestVerifyEmail:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = '/api/auth/verify-email'
+        self.user = User.objects.create_user(
+            email='imane@example.com',
+            name='Imane',
+            password='StrongPass1',
+        )
+        self.token = EmailVerifyToken.objects.create(
+            user=self.user,
+            token='abc123',
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+    # --- Step 2: Validate token ---
+
+    def test_verify_email_with_valid_token_returns_200(self):
+        response = self.client.get(self.url, {'token': 'abc123'})
+        assert response.status_code == 200
+        assert 'Email verified' in str(response.data['message'])
+
+    def test_verify_email_with_missing_token_returns_400(self):
+        response = self.client.get(self.url)
+        assert response.status_code == 400
+
+    def test_verify_email_with_invalid_token_returns_400(self):
+        response = self.client.get(self.url, {'token': 'nonexistent'})
+        assert response.status_code == 400
+
+    def test_verify_email_with_expired_token_returns_400(self):
+        self.token.expires_at = timezone.now() - timedelta(hours=1)
+        self.token.save()
+        response = self.client.get(self.url, {'token': 'abc123'})
+        assert response.status_code == 400
+
+    # --- Step 3: Verify user ---
+
+    def test_verify_email_sets_user_email_verified_true(self):
+        self.client.get(self.url, {'token': 'abc123'})
+        self.user.refresh_from_db()
+        assert self.user.email_verified is True
+
+    def test_verify_email_deletes_token_after_use(self):
+        self.client.get(self.url, {'token': 'abc123'})
+        assert EmailVerifyToken.objects.filter(token='abc123').count() == 0
+
+    # --- Step 4: Return response ---
+
+    def test_verify_email_with_already_used_token_returns_400(self):
+        self.client.get(self.url, {'token': 'abc123'})
+        response = self.client.get(self.url, {'token': 'abc123'})
+        assert response.status_code == 400
