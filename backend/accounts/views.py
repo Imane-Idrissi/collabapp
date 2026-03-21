@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User, EmailVerifyToken, PasswordResetToken
-from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, SignupSerializer
+from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, ResetPasswordSerializer, SignupSerializer
 from accounts.utils import send_password_reset_email, send_verification_email
 
 logger = logging.getLogger(__name__)
@@ -216,3 +216,47 @@ class ForgotPasswordView(APIView):
                 {'message': VERIFY_MESSAGE},
                 status=status.HTTP_200_OK,
             )
+
+
+class ResetPasswordView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+
+        try:
+            token = PasswordResetToken.objects.get(token=data['token'])
+        except PasswordResetToken.DoesNotExist:
+            return Response(
+                {'detail': 'Invalid token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if token.expires_at < timezone.now():
+            return Response(
+                {'detail': 'Token has expired.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if token.used:
+            return Response(
+                {'detail': 'Token has already been used.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = token.user
+        user.set_password(data['password'])
+        user.save()
+
+        token.used = True
+        token.save()
+
+        return Response(
+            {'message': 'Password reset successfully.'},
+            status=status.HTTP_200_OK,
+        )
