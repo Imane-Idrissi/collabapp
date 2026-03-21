@@ -450,3 +450,246 @@ class TestDeleteColumn:
         response = self.client.delete(self.url)
         assert response.status_code == 204
         assert not Column.objects.filter(id=self.column.id).exists()
+
+
+@pytest.mark.django_db
+class TestCreateTask:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.column = Column.objects.create(project=self.project, name='To Do', position=0)
+        self.url = f'/api/projects/{self.project.id}/tasks'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_create_task_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.post(self.url, {'name': 'Task', 'column_id': self.column.id})
+        assert response.status_code == 401
+
+    def test_create_task_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.post(self.url, {'name': 'Task', 'column_id': self.column.id})
+        assert response.status_code == 403
+
+    def test_create_task_project_not_found_returns_404(self):
+        response = self.client.post('/api/projects/99999/tasks', {'name': 'Task', 'column_id': 1})
+        assert response.status_code == 404
+
+    def test_create_task_missing_name_returns_400(self):
+        response = self.client.post(self.url, {'column_id': self.column.id})
+        assert response.status_code == 400
+
+    def test_create_task_missing_column_id_returns_400(self):
+        response = self.client.post(self.url, {'name': 'Task'})
+        assert response.status_code == 400
+
+    def test_create_task_invalid_column_id_returns_400(self):
+        response = self.client.post(self.url, {'name': 'Task', 'column_id': 99999})
+        assert response.status_code == 400
+
+    def test_create_task_column_from_other_project_returns_400(self):
+        other_user = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        other_project = _create_project(other_user, 'Other Project')
+        other_column = Column.objects.create(project=other_project, name='Col', position=0)
+        response = self.client.post(self.url, {'name': 'Task', 'column_id': other_column.id})
+        assert response.status_code == 400
+
+    def test_create_task_success(self):
+        response = self.client.post(self.url, {
+            'name': 'My Task',
+            'column_id': self.column.id,
+            'description': 'Some desc',
+            'priority': 'high',
+        })
+        assert response.status_code == 201
+        assert response.data['name'] == 'My Task'
+        assert response.data['description'] == 'Some desc'
+        assert response.data['priority'] == 'high'
+        assert response.data['position'] == 0
+        assert response.data['column_id'] == self.column.id
+        assert response.data['creator_id'] == self.user.id
+        assert response.data['version'] == 1
+        assert response.data['is_ai_generated'] is False
+
+    def test_create_task_sets_next_position(self):
+        Task.objects.create(
+            column=self.column, project=self.project, name='First',
+            position=0, creator=self.user,
+        )
+        response = self.client.post(self.url, {'name': 'Second', 'column_id': self.column.id})
+        assert response.data['position'] == 1
+
+
+@pytest.mark.django_db
+class TestEditTask:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.column = Column.objects.create(project=self.project, name='To Do', position=0)
+        self.column2 = Column.objects.create(project=self.project, name='Done', position=1)
+        self.task = Task.objects.create(
+            column=self.column, project=self.project, name='My Task',
+            description='Desc', priority='medium', position=0, creator=self.user,
+        )
+        self.url = f'/api/projects/{self.project.id}/tasks/{self.task.id}'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_edit_task_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.patch(self.url, {'name': 'New'})
+        assert response.status_code == 401
+
+    def test_edit_task_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.patch(self.url, {'name': 'New'})
+        assert response.status_code == 403
+
+    def test_edit_task_not_found_returns_404(self):
+        response = self.client.patch(
+            f'/api/projects/{self.project.id}/tasks/99999', {'name': 'New'}
+        )
+        assert response.status_code == 404
+
+    def test_edit_task_version_conflict_returns_409(self):
+        response = self.client.patch(self.url, {'name': 'New', 'version': 999}, format='json')
+        assert response.status_code == 409
+
+    def test_edit_task_name(self):
+        response = self.client.patch(self.url, {'name': 'Updated', 'version': 1}, format='json')
+        assert response.status_code == 200
+        assert response.data['name'] == 'Updated'
+        assert response.data['version'] == 2
+
+    def test_edit_task_move_to_column(self):
+        response = self.client.patch(
+            self.url, {'column_id': self.column2.id, 'version': 1}, format='json',
+        )
+        assert response.status_code == 200
+        assert response.data['column_id'] == self.column2.id
+        assert response.data['version'] == 2
+
+    def test_edit_task_increments_version(self):
+        self.client.patch(self.url, {'name': 'V2', 'version': 1}, format='json')
+        self.task.refresh_from_db()
+        assert self.task.version == 2
+        response = self.client.patch(self.url, {'name': 'V3', 'version': 2}, format='json')
+        assert response.status_code == 200
+        assert response.data['version'] == 3
+
+
+@pytest.mark.django_db
+class TestDeleteTask:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.column = Column.objects.create(project=self.project, name='To Do', position=0)
+        self.task = Task.objects.create(
+            column=self.column, project=self.project, name='My Task',
+            position=0, creator=self.user,
+        )
+        self.url = f'/api/projects/{self.project.id}/tasks/{self.task.id}'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_delete_task_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.delete(self.url)
+        assert response.status_code == 401
+
+    def test_delete_task_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.delete(self.url)
+        assert response.status_code == 403
+
+    def test_delete_task_not_found_returns_404(self):
+        response = self.client.delete(f'/api/projects/{self.project.id}/tasks/99999')
+        assert response.status_code == 404
+
+    def test_delete_task_success(self):
+        response = self.client.delete(self.url)
+        assert response.status_code == 204
+        assert not Task.objects.filter(id=self.task.id).exists()
+
+
+@pytest.mark.django_db
+class TestLoadBoard:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.url = f'/api/projects/{self.project.id}/board'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_load_board_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.get(self.url)
+        assert response.status_code == 401
+
+    def test_load_board_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.get(self.url)
+        assert response.status_code == 403
+
+    def test_load_board_project_not_found_returns_404(self):
+        response = self.client.get('/api/projects/99999/board')
+        assert response.status_code == 404
+
+    def test_load_board_empty_returns_empty_columns(self):
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.data['columns'] == []
+
+    def test_load_board_returns_columns_with_tasks(self):
+        col = Column.objects.create(project=self.project, name='To Do', position=0)
+        task = Task.objects.create(
+            column=col, project=self.project, name='Task 1',
+            position=0, creator=self.user,
+        )
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert len(response.data['columns']) == 1
+        assert response.data['columns'][0]['name'] == 'To Do'
+        assert len(response.data['columns'][0]['tasks']) == 1
+        assert response.data['columns'][0]['tasks'][0]['name'] == 'Task 1'
+
+    def test_load_board_columns_ordered_by_position(self):
+        Column.objects.create(project=self.project, name='Done', position=2)
+        Column.objects.create(project=self.project, name='To Do', position=0)
+        Column.objects.create(project=self.project, name='In Progress', position=1)
+        response = self.client.get(self.url)
+        names = [c['name'] for c in response.data['columns']]
+        assert names == ['To Do', 'In Progress', 'Done']
+
+    def test_load_board_tasks_ordered_by_position(self):
+        col = Column.objects.create(project=self.project, name='To Do', position=0)
+        Task.objects.create(column=col, project=self.project, name='Second', position=1, creator=self.user)
+        Task.objects.create(column=col, project=self.project, name='First', position=0, creator=self.user)
+        response = self.client.get(self.url)
+        task_names = [t['name'] for t in response.data['columns'][0]['tasks']]
+        assert task_names == ['First', 'Second']
