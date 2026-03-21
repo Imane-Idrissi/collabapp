@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User, EmailVerifyToken
-from accounts.serializers import SignupSerializer
+from accounts.serializers import LoginSerializer, SignupSerializer
 from accounts.utils import send_verification_email
 
 logger = logging.getLogger(__name__)
@@ -88,3 +88,41 @@ class SignupView(APIView):
                 'avatar_color': user.avatar_color,
             },
         }, status=status.HTTP_201_CREATED)
+
+
+class LoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        try:
+            user = User.objects.get(email=data['email'])
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Invalid email or password.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not user.check_password(data['password']):
+            return Response(
+                {'detail': 'Invalid email or password.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        token = str(RefreshToken.for_user(user).access_token)
+
+        return Response({
+            'token': token,
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'email_verified': user.email_verified,
+                'avatar_color': user.avatar_color,
+            },
+        }, status=status.HTTP_200_OK)

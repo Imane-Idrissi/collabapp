@@ -27,3 +27,8 @@ class SignupSerializer(serializers.Serializer):
         if data.get('password') != data.get('confirm_password'):
             raise serializers.ValidationError({'confirm_password': "Passwords do not match."})
         return data
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, allow_blank=False)
