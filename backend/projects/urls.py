@@ -1,4 +1,5 @@
 from django.urls import path
+from chat.views import MessageListCreateView
 from projects.views import (
     BoardView,
     ColumnDetailView,
@@ -21,4 +22,5 @@ urlpatterns = [
     path('/<int:project_id>/tasks', TaskListCreateView.as_view(), name='task-list-create'),
     path('/<int:project_id>/tasks/<int:task_id>', TaskDetailView.as_view(), name='task-detail'),
     path('/<int:project_id>/board', BoardView.as_view(), name='board'),
+    path('/<int:project_id>/messages', MessageListCreateView.as_view(), name='message-list-create'),
 ]
