@@ -10,7 +10,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User, EmailVerifyToken, PasswordResetToken
-from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, ResetPasswordSerializer, SignupSerializer
+from rest_framework.permissions import IsAuthenticated
+from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, ResetPasswordSerializer, SignupSerializer, UpdateEmailSerializer
 from accounts.utils import send_password_reset_email, send_verification_email
 
 logger = logging.getLogger(__name__)
@@ -258,5 +259,44 @@ class ResetPasswordView(APIView):
 
         return Response(
             {'message': 'Password reset successfully.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class UpdateEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+
+        if user.email_verified:
+            return Response(
+                {'detail': 'Email can only be updated while unverified.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = UpdateEmailSerializer(data=request.data, current_user=user)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        new_email = serializer.validated_data['email']
+        user.email = new_email
+        user.save()
+
+        EmailVerifyToken.objects.filter(user=user).delete()
+
+        verify_token = EmailVerifyToken.objects.create(
+            user=user,
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        try:
+            send_verification_email(user, verify_token.token)
+        except Exception:
+            logger.exception("Failed to send verification email")
+
+        return Response(
+            {'message': f'Email updated. Verification email sent to {new_email}.'},
             status=status.HTTP_200_OK,
         )

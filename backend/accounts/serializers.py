@@ -60,3 +60,19 @@ class ResetPasswordSerializer(serializers.Serializer):
         if data.get('password') != data.get('confirm_password'):
             raise serializers.ValidationError({'confirm_password': "Passwords do not match."})
         return data
+
+
+class UpdateEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def __init__(self, *args, **kwargs):
+        self.current_user = kwargs.pop('current_user', None)
+        super().__init__(*args, **kwargs)
+
+    def validate_email(self, value):
+        queryset = User.objects.filter(email=value)
+        if self.current_user:
+            queryset = queryset.exclude(pk=self.current_user.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("Email already exists.")
+        return value
