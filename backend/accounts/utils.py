@@ -6,3 +6,8 @@ logger = logging.getLogger(__name__)
 def send_verification_email(user, token):
     # Placeholder — Resend integration added in a later phase.
     logger.info(f"Verification email sent to {user.email}")
+
+
+def send_password_reset_email(user, token):
+    # Placeholder — Resend integration added in a later phase.
+    logger.info(f"Password reset email sent to {user.email}")

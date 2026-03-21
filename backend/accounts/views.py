@@ -9,9 +9,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.models import User, EmailVerifyToken
-from accounts.serializers import LoginSerializer, SignupSerializer
-from accounts.utils import send_verification_email
+from accounts.models import User, EmailVerifyToken, PasswordResetToken
+from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, SignupSerializer
+from accounts.utils import send_password_reset_email, send_verification_email
 
 logger = logging.getLogger(__name__)
 
@@ -163,3 +163,56 @@ class VerifyEmailView(APIView):
             {'message': 'Email verified successfully.'},
             status=status.HTTP_200_OK,
         )
+
+
+RESET_MESSAGE = 'A password reset link has been sent to your inbox.'
+VERIFY_MESSAGE = "We've sent a verification email to your inbox. Please verify your email, then request a password reset again."
+
+
+class ForgotPasswordView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data['email']
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {'message': RESET_MESSAGE},
+                status=status.HTTP_200_OK,
+            )
+
+        if user.email_verified:
+            token = PasswordResetToken.objects.create(
+                user=user,
+                token=uuid.uuid4().hex,
+                expires_at=timezone.now() + timedelta(hours=1),
+            )
+            try:
+                send_password_reset_email(user, token.token)
+            except Exception:
+                logger.exception("Failed to send password reset email")
+            return Response(
+                {'message': RESET_MESSAGE},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            token = EmailVerifyToken.objects.create(
+                user=user,
+                token=uuid.uuid4().hex,
+                expires_at=timezone.now() + timedelta(hours=24),
+            )
+            try:
+                send_verification_email(user, token.token)
+            except Exception:
+                logger.exception("Failed to send verification email")
+            return Response(
+                {'message': VERIFY_MESSAGE},
+                status=status.HTTP_200_OK,
+            )
