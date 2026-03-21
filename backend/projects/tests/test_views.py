@@ -163,3 +163,70 @@ class TestListProjects:
         ProjectMember.objects.create(project=project, user=other_user)
         response = self.client.get(self.url)
         assert response.data[0]['member_count'] == 2
+
+
+@pytest.mark.django_db
+class TestUpdateProject:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com',
+            name='Imane',
+            password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'Original Name', 'Original desc')
+        self.url = f'/api/projects/{self.project.id}'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    # --- Authentication ---
+
+    def test_update_project_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.patch(self.url, {'name': 'New'})
+        assert response.status_code == 401
+
+    # --- Membership ---
+
+    def test_update_project_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        token = str(RefreshToken.for_user(other).access_token)
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        response = client.patch(self.url, {'name': 'New'})
+        assert response.status_code == 403
+
+    def test_update_project_not_found_returns_404(self):
+        response = self.client.patch('/api/projects/99999', {'name': 'New'})
+        assert response.status_code == 404
+
+    # --- Validation ---
+
+    def test_update_project_with_empty_name_returns_400(self):
+        response = self.client.patch(self.url, {'name': ''})
+        assert response.status_code == 400
+
+    # --- Update ---
+
+    def test_update_project_name_only(self):
+        response = self.client.patch(self.url, {'name': 'New Name'})
+        assert response.status_code == 200
+        self.project.refresh_from_db()
+        assert self.project.name == 'New Name'
+        assert self.project.description == 'Original desc'
+
+    def test_update_project_description_only(self):
+        response = self.client.patch(self.url, {'description': 'New desc'})
+        assert response.status_code == 200
+        self.project.refresh_from_db()
+        assert self.project.name == 'Original Name'
+        assert self.project.description == 'New desc'
+
+    def test_update_project_both_fields(self):
+        response = self.client.patch(self.url, {'name': 'New Name', 'description': 'New desc'})
+        assert response.status_code == 200
+        assert response.data['name'] == 'New Name'
+        assert response.data['description'] == 'New desc'
+        assert 'id' in response.data
+        assert 'created_at' in response.data
