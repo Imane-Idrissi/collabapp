@@ -143,3 +143,9 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
+
+# S3
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_S3_BUCKET = os.environ.get('AWS_S3_BUCKET', 'collabapp-uploads')
+AWS_S3_REGION = os.environ.get('AWS_S3_REGION', 'us-east-1')
