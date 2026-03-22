@@ -86,3 +86,32 @@ class TestChatConsumer:
         assert response['text'] == 'Hello!'
         assert response['sender']['name'] == 'Imane'
         await communicator.disconnect()
+
+    async def test_receives_board_event(self):
+        user = await create_user('imane@example.com', 'Imane')
+        project = await create_project_with_member(user, 'Project')
+        token = await get_token(user)
+        communicator = WebsocketCommunicator(application, f'/ws/chat/{project.id}/?token={token}')
+        connected, _ = await communicator.connect()
+        assert connected is True
+
+        from channels.layers import get_channel_layer
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f'chat_{project.id}',
+            {
+                'type': 'board.event',
+                'event': 'task:created',
+                'payload': {
+                    'id': 1,
+                    'name': 'New task',
+                    'column_id': 1,
+                },
+            },
+        )
+
+        response = await communicator.receive_json_from()
+        assert response['type'] == 'board_event'
+        assert response['event'] == 'task:created'
+        assert response['payload']['name'] == 'New task'
+        await communicator.disconnect()
