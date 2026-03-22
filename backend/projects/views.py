@@ -1,5 +1,7 @@
 import uuid
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +17,19 @@ from projects.serializers import (
     UpdateProjectSerializer,
     UpdateTaskSerializer,
 )
+
+def _broadcast_board_event(project_id, event, payload):
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{project_id}',
+            {
+                'type': 'board.event',
+                'event': event,
+                'payload': payload,
+            },
+        )
+
 
 DEFAULT_COLUMNS = [
     ('To Do', 0),
@@ -189,6 +204,12 @@ class ColumnListCreateView(APIView):
             position=position,
         )
 
+        _broadcast_board_event(project_id, 'column:created', {
+            'id': column.id,
+            'name': column.name,
+            'position': column.position,
+        })
+
         return Response({
             'id': column.id,
             'name': column.name,
@@ -213,6 +234,12 @@ class ColumnDetailView(APIView):
         column.name = serializer.validated_data['name']
         column.save()
 
+        _broadcast_board_event(project_id, 'column:renamed', {
+            'id': column.id,
+            'name': column.name,
+            'position': column.position,
+        })
+
         return Response({
             'id': column.id,
             'name': column.name,
@@ -232,7 +259,11 @@ class ColumnDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        col_id = column.id
         column.delete()
+
+        _broadcast_board_event(project_id, 'column:deleted', {'id': col_id})
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -282,6 +313,8 @@ class TaskListCreateView(APIView):
             creator=request.user,
         )
 
+        _broadcast_board_event(project_id, 'task:created', _serialize_task(task))
+
         return Response(_serialize_task(task), status=status.HTTP_201_CREATED)
 
 
@@ -320,8 +353,12 @@ class TaskDetailView(APIView):
         if 'position' in data:
             task.position = data['position']
 
+        is_move = 'column_id' in data or 'position' in data
         task.version += 1
         task.save()
+
+        event_type = 'task:moved' if is_move else 'task:updated'
+        _broadcast_board_event(project_id, event_type, _serialize_task(task))
 
         return Response(_serialize_task(task), status=status.HTTP_200_OK)
 
@@ -331,7 +368,11 @@ class TaskDetailView(APIView):
             return error
 
         task = get_object_or_404(Task, id=task_id, project=project)
+        task_id_val = task.id
         task.delete()
+
+        _broadcast_board_event(project_id, 'task:deleted', {'id': task_id_val})
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

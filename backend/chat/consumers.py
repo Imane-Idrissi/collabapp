@@ -31,6 +31,13 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def chat_message(self, event):
         await self.send_json(event['message'])
 
+    async def board_event(self, event):
+        await self.send_json({
+            'type': 'board_event',
+            'event': event['event'],
+            'payload': event['payload'],
+        })
+
     @database_sync_to_async
     def _is_member(self, user_id, project_id):
         return ProjectMember.objects.filter(user_id=user_id, project_id=project_id).exists()
