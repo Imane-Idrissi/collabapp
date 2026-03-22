@@ -1,15 +1,22 @@
+import json
+import logging
 import uuid
 
+from google import genai
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings as django_settings
+from django.db.models import Count, Subquery
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from django.db.models import Count, Subquery
+from chat.models import Message
 from projects.models import Column, InviteToken, Project, ProjectMember, Task
-from django.shortcuts import get_object_or_404
+
+logger = logging.getLogger(__name__)
 from projects.serializers import (
     ColumnSerializer,
     CreateProjectSerializer,
@@ -403,3 +410,135 @@ class BoardView(APIView):
             ],
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+EXTRACTION_MARKER = '──────── Tasks extracted ────────'
+
+GEMINI_PROMPT = """You are analyzing a team chat conversation. Extract actionable tasks from the messages.
+
+Return a JSON array of tasks. Each task should have:
+- "name": short task title
+- "description": brief description of what needs to be done
+- "priority": "high", "medium", or "low"
+
+If there are no actionable tasks, return an empty array: []
+
+Only return the JSON array, no other text.
+
+Messages:
+"""
+
+
+def call_gemini(messages):
+    client = genai.Client(api_key=django_settings.GEMINI_API_KEY)
+    conversation = '\n'.join(
+        f"{m['sender']}: {m['text']}" for m in messages
+    )
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=GEMINI_PROMPT + conversation,
+        config={'response_mime_type': 'application/json'},
+    )
+    return json.loads(response.text)
+
+
+class ExtractTasksView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        if project.extraction_running:
+            return Response(
+                {'detail': 'Extraction already in progress.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        last_marker = Message.objects.filter(
+            project=project, text=EXTRACTION_MARKER,
+        ).order_by('-created_at').first()
+
+        messages = Message.objects.filter(
+            project=project,
+        ).exclude(text=EXTRACTION_MARKER).select_related('sender')
+
+        if last_marker:
+            messages = messages.filter(created_at__gt=last_marker.created_at)
+
+        messages = messages.order_by('created_at')
+
+        if not messages.exists():
+            return Response({'suggestions': []}, status=status.HTTP_200_OK)
+
+        project.extraction_running = True
+        project.save()
+
+        try:
+            message_data = [
+                {'sender': m.sender.name, 'text': m.text}
+                for m in messages
+            ]
+            suggestions = call_gemini(message_data)
+
+            Message.objects.create(
+                project=project,
+                sender=request.user,
+                text=EXTRACTION_MARKER,
+            )
+
+            project.extraction_running = False
+            project.save()
+
+            return Response({'suggestions': suggestions}, status=status.HTTP_200_OK)
+        except Exception:
+            logger.exception('Gemini extraction failed')
+            project.extraction_running = False
+            project.save()
+            return Response(
+                {'detail': 'AI extraction failed. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class BatchCreateTasksView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        tasks_data = request.data.get('tasks', [])
+        if not tasks_data:
+            return Response(
+                {'tasks': ['At least one task is required.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        created_tasks = []
+        for t in tasks_data:
+            column = Column.objects.filter(id=t.get('column_id'), project=project).first()
+            if not column:
+                return Response(
+                    {'column_id': ['Invalid column.']},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            position = Task.objects.filter(column=column).count()
+            task = Task.objects.create(
+                column=column,
+                project=project,
+                name=t['name'],
+                description=t.get('description', ''),
+                priority=t.get('priority', ''),
+                position=position,
+                creator=request.user,
+                is_ai_generated=True,
+            )
+            created_tasks.append(task)
+
+        return Response(
+            {'tasks': [_serialize_task(t) for t in created_tasks]},
+            status=status.HTTP_201_CREATED,
+        )

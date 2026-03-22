@@ -149,3 +149,6 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 AWS_S3_BUCKET = os.environ.get('AWS_S3_BUCKET', 'collabapp-uploads')
 AWS_S3_REGION = os.environ.get('AWS_S3_REGION', 'us-east-1')
+
+# Gemini
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
