@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary Blue */
+  --color-primary-50: hsl(214, 100%, 97%);
+  --color-primary-100: hsl(214, 95%, 93%);
+  --color-primary-200: hsl(213, 97%, 87%);
+  --color-primary-300: hsl(212, 96%, 78%);
+  --color-primary-400: hsl(213, 94%, 68%);
+  --color-primary-500: hsl(217, 91%, 60%);
+  --color-primary-600: hsl(221, 83%, 53%);
+  --color-primary-700: hsl(224, 76%, 48%);
+  --color-primary-800: hsl(226, 71%, 40%);
+  --color-primary-900: hsl(224, 64%, 33%);
+
+  /* Success Green */
+  --color-success-50: hsl(142, 76%, 96%);
+  --color-success-100: hsl(142, 72%, 91%);
+  --color-success-200: hsl(142, 69%, 82%);
+  --color-success-300: hsl(142, 64%, 71%);
+  --color-success-400: hsl(142, 53%, 58%);
+  --color-success-500: hsl(142, 71%, 45%);
+  --color-success-600: hsl(142, 76%, 36%);
+  --color-success-700: hsl(142, 72%, 29%);
+  --color-success-800: hsl(142, 64%, 24%);
+  --color-success-900: hsl(142, 55%, 20%);
+
+  /* Warning Amber */
+  --color-warning-50: hsl(48, 100%, 96%);
+  --color-warning-100: hsl(48, 96%, 89%);
+  --color-warning-200: hsl(48, 97%, 77%);
+  --color-warning-300: hsl(46, 97%, 65%);
+  --color-warning-400: hsl(43, 96%, 56%);
+  --color-warning-500: hsl(38, 92%, 50%);
+  --color-warning-600: hsl(32, 95%, 44%);
+  --color-warning-700: hsl(26, 90%, 37%);
+  --color-warning-800: hsl(23, 83%, 31%);
+  --color-warning-900: hsl(22, 78%, 26%);
+
+  /* Error Red */
+  --color-error-50: hsl(0, 86%, 97%);
+  --color-error-100: hsl(0, 93%, 94%);
+  --color-error-200: hsl(0, 96%, 89%);
+  --color-error-300: hsl(0, 94%, 82%);
+  --color-error-400: hsl(0, 91%, 71%);
+  --color-error-500: hsl(0, 84%, 60%);
+  --color-error-600: hsl(0, 72%, 51%);
+  --color-error-700: hsl(0, 74%, 42%);
+  --color-error-800: hsl(0, 70%, 35%);
+  --color-error-900: hsl(0, 63%, 31%);
+
+  /* Purple (AI features) */
+  --color-purple-50: hsl(270, 100%, 98%);
+  --color-purple-100: hsl(269, 100%, 95%);
+  --color-purple-200: hsl(269, 90%, 87%);
+  --color-purple-300: hsl(269, 85%, 78%);
+  --color-purple-400: hsl(270, 80%, 68%);
+  --color-purple-500: hsl(271, 81%, 56%);
+  --color-purple-600: hsl(271, 77%, 52%);
+  --color-purple-700: hsl(271, 72%, 47%);
+  --color-purple-800: hsl(271, 67%, 42%);
+  --color-purple-900: hsl(271, 62%, 37%);
+
+  /* Surface / Background */
+  --color-surface-app: hsl(220, 20%, 98.5%);
+  --color-surface-card: hsl(220, 15%, 97%);
+  --color-surface-elevated: hsl(220, 12%, 95%);
+  --color-surface-subtle: hsl(220, 10%, 93%);
+  --color-surface-overlay: hsl(220, 15%, 15%);
+
+  /* Text */
+  --color-text-primary: hsl(220, 20%, 14%);
+  --color-text-secondary: hsl(220, 13%, 35%);
+  --color-text-tertiary: hsl(220, 9%, 46%);
+  --color-text-placeholder: hsl(220, 7%, 60%);
+  --color-text-inverse: hsl(220, 15%, 97%);
+
+  /* Border */
+  --color-border-light: hsl(220, 13%, 91%);
+  --color-border-medium: hsl(220, 13%, 87%);
+  --color-border-strong: hsl(220, 13%, 82%);
+  --color-border-focus: hsl(217, 91%, 60%);
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 2px 0 hsl(220 20% 20% / 0.03);
+  --shadow-soft: 0 1px 3px 0 hsl(220 20% 20% / 0.06), 0 1px 2px 0 hsl(220 20% 20% / 0.04);
+  --shadow-medium: 0 2px 8px 0 hsl(220 20% 20% / 0.08), 0 1px 3px 0 hsl(220 20% 20% / 0.05);
+  --shadow-elevated: 0 4px 16px 0 hsl(220 20% 20% / 0.10), 0 2px 6px 0 hsl(220 20% 20% / 0.06);
+  --shadow-floating: 0 8px 32px 0 hsl(220 20% 20% / 0.12), 0 4px 16px 0 hsl(220 20% 20% / 0.08);
+  --shadow-focus: 0 0 0 3px hsl(217 91% 60% / 0.12);
+}
+
+body {
+  background-color: var(--color-surface-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
