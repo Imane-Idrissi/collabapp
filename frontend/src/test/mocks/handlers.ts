@@ -57,4 +57,44 @@ export const handlers = [
       { status: 200 },
     )
   }),
+
+  http.patch('/api/auth/update-email', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    if (body.email === 'taken@example.com') {
+      return HttpResponse.json(
+        { email: ['Email already exists.'] },
+        { status: 400 },
+      )
+    }
+    return HttpResponse.json(
+      { message: `Email updated. Verification email sent to ${body.email}.` },
+      { status: 200 },
+    )
+  }),
+
+  http.get('/api/projects', ({ request }) => {
+    const url = new URL(request.url)
+    const search = url.searchParams.get('search')
+    const projects = [
+      { id: 1, name: 'CollabApp', description: 'Team collaboration tool', member_count: 3, created_at: '2026-01-01T00:00:00Z' },
+      { id: 2, name: 'Side Project', description: 'Weekend hack', member_count: 1, created_at: '2026-02-01T00:00:00Z' },
+      { id: 3, name: 'Design System', description: '', member_count: 2, created_at: '2026-03-01T00:00:00Z' },
+    ]
+    if (search) {
+      const filtered = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+      return HttpResponse.json(filtered)
+    }
+    return HttpResponse.json(projects)
+  }),
+
+  http.post('/api/projects', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    if (!body.name?.trim()) {
+      return HttpResponse.json({ name: ['This field is required.'] }, { status: 400 })
+    }
+    return HttpResponse.json(
+      { id: 99, name: body.name, description: body.description || '', created_at: '2026-03-24T00:00:00Z' },
+      { status: 201 },
+    )
+  }),
 ]
