@@ -97,4 +97,80 @@ export const handlers = [
       { status: 201 },
     )
   }),
+
+  http.patch('/api/projects/:projectId', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    return HttpResponse.json(
+      { id: 1, name: body.name || 'CollabApp', description: body.description || '', created_at: '2026-01-01T00:00:00Z' },
+    )
+  }),
+
+  http.get('/api/projects/:projectId/board', () => {
+    return HttpResponse.json({
+      columns: [
+        {
+          id: 1, name: 'To Do', position: 0,
+          tasks: [
+            { id: 1, name: 'Setup project', description: 'Initialize repo', priority: 'high', position: 0, column_id: 1, creator_id: 1, is_ai_generated: false, version: 1, created_at: '2026-03-20T00:00:00Z' },
+            { id: 2, name: 'AI generated task', description: '', priority: 'medium', position: 1, column_id: 1, creator_id: 1, is_ai_generated: true, version: 1, created_at: '2026-03-20T00:00:00Z' },
+          ],
+        },
+        {
+          id: 2, name: 'In Progress', position: 1,
+          tasks: [
+            { id: 3, name: 'Build frontend', description: 'React + Tailwind', priority: 'medium', position: 0, column_id: 2, creator_id: 1, is_ai_generated: false, version: 1, created_at: '2026-03-21T00:00:00Z' },
+          ],
+        },
+        { id: 3, name: 'Done', position: 2, tasks: [] },
+      ],
+    })
+  }),
+
+  http.post('/api/projects/:projectId/columns', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    return HttpResponse.json({ id: 10, name: body.name, position: 3 }, { status: 201 })
+  }),
+
+  http.patch('/api/projects/:projectId/columns/:columnId', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    return HttpResponse.json({ id: 1, name: body.name, position: 0 })
+  }),
+
+  http.delete('/api/projects/:projectId/columns/:columnId', () => {
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/projects/:projectId/tasks', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return HttpResponse.json(
+      { id: 50, name: body.name, description: body.description || '', priority: body.priority || '', position: 0, column_id: body.column_id, creator_id: 1, is_ai_generated: false, version: 1, created_at: '2026-03-24T00:00:00Z' },
+      { status: 201 },
+    )
+  }),
+
+  http.patch('/api/projects/:projectId/tasks/:taskId', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    if (body.version === 999) {
+      return HttpResponse.json({ detail: 'Someone else edited this task. Reload to see the latest version.' }, { status: 409 })
+    }
+    return HttpResponse.json(
+      { id: 1, name: body.name || 'Setup project', description: body.description || '', priority: body.priority || 'high', position: 0, column_id: body.column_id || 1, creator_id: 1, is_ai_generated: false, version: ((body.version as number) || 1) + 1, created_at: '2026-03-20T00:00:00Z' },
+    )
+  }),
+
+  http.delete('/api/projects/:projectId/tasks/:taskId', () => {
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/projects/:projectId/invites', () => {
+    return HttpResponse.json({ token: 'invite-token-abc123' }, { status: 201 })
+  }),
+
+  http.post('/api/projects/join', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    if (body.token === 'invalid-token') {
+      return HttpResponse.json({ token: ['Invalid invite token.'] }, { status: 400 })
+    }
+    return HttpResponse.json({ project: { id: 1, name: 'CollabApp' } })
+  }),
 ]
