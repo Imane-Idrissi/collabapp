@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import type { Message } from '../../../types'
+import type { Message, Attachment } from '../../../types'
 import { EXTRACTION_MARKER } from '../../../types'
 import { Avatar } from '../../../shared/Avatar'
 import { api } from '../../../lib/api'
+import { AttachmentButton } from './AttachmentButton'
+import { MessageAttachments } from './MessageAttachments'
 
 interface ChatPanelProps {
   projectId: string
@@ -16,6 +18,7 @@ export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }:
   const [sending, setSending] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(true)
@@ -61,12 +64,26 @@ export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }:
 
   async function handleSend() {
     const trimmed = text.trim()
-    if (!trimmed || sending) return
+    if (!trimmed && !pendingFile) return
+    if (sending) return
     setSending(true)
     try {
-      const message = await api.post<Message>(`/api/projects/${projectId}/messages`, { text: trimmed })
+      let attachments: Omit<Attachment, 'id'>[] = []
+      if (pendingFile) {
+        const upload = await api.post<{ upload_url: string; file_url: string }>(
+          `/api/projects/${projectId}/upload`,
+          { filename: pendingFile.name, content_type: pendingFile.type, size: pendingFile.size },
+        )
+        await fetch(upload.upload_url, { method: 'PUT', body: pendingFile })
+        attachments = [{ url: upload.file_url, name: pendingFile.name, size: pendingFile.size, type: pendingFile.type }]
+      }
+      const message = await api.post<Message>(`/api/projects/${projectId}/messages`, {
+        text: trimmed,
+        attachments,
+      })
       onMessageSent(message)
       setText('')
+      setPendingFile(null)
       isAtBottomRef.current = true
     } catch {
       // Silently fail
@@ -114,6 +131,7 @@ export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }:
                   <span className="text-xs text-text-tertiary">{formatTime(msg.created_at)}</span>
                 </div>
                 <p className="text-sm text-text-secondary whitespace-pre-wrap break-words">{msg.text}</p>
+                {msg.attachments.length > 0 && <MessageAttachments attachments={msg.attachments} />}
               </div>
             </div>
           ),
@@ -131,9 +149,13 @@ export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }:
             placeholder="Type a message..."
             className="flex-1 rounded-lg border border-border-medium px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
           />
+          <AttachmentButton
+            onFileSelected={(file) => setPendingFile(file)}
+            onError={() => {}}
+          />
           <button
             onClick={handleSend}
-            disabled={!text.trim() || sending}
+            disabled={(!text.trim() && !pendingFile) || sending}
             className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Send
