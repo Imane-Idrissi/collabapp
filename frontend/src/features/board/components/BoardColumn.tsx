@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Task, Column } from '../../../types'
 import { TaskCard } from './TaskCard'
 import { api } from '../../../lib/api'
@@ -16,6 +18,13 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(column.name)
   const [deleteError, setDeleteError] = useState('')
+
+  const { setNodeRef } = useDroppable({
+    id: `column-${column.id}`,
+    data: { column },
+  })
+
+  const taskIds = column.tasks.map((t) => t.id)
 
   async function handleRename() {
     if (!editName.trim() || editName === column.name) {
@@ -85,10 +94,12 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
       )}
 
       {/* Tasks */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-        {column.tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
-        ))}
+      <div ref={setNodeRef} className="flex flex-1 flex-col gap-2 overflow-y-auto min-h-[40px]">
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {column.tasks.map((task) => (
+            <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+          ))}
+        </SortableContext>
       </div>
 
       {/* Add task */}
