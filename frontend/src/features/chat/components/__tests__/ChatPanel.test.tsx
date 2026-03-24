@@ -91,4 +91,48 @@ describe('ChatPanel', () => {
     )
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
   })
+
+  it('shows attachment button in input area', () => {
+    renderWithProviders(
+      <ChatPanel projectId="1" messages={mockMessages} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+    )
+    expect(screen.getByRole('button', { name: /attach/i })).toBeInTheDocument()
+  })
+
+  it('displays image attachments inline in messages', () => {
+    const messagesWithImage: Message[] = [
+      {
+        id: 10,
+        text: 'Check this screenshot',
+        sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' },
+        attachments: [{ id: 1, url: 'https://s3.example.com/screenshot.png', name: 'screenshot.png', size: 204800, type: 'image/png' }],
+        created_at: '2026-03-24T10:00:00Z',
+      },
+    ]
+    renderWithProviders(
+      <ChatPanel projectId="1" messages={messagesWithImage} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+    )
+    expect(screen.getByText('Check this screenshot')).toBeInTheDocument()
+    const img = screen.getByRole('img', { name: 'screenshot.png' })
+    expect(img).toHaveAttribute('src', 'https://s3.example.com/screenshot.png')
+  })
+
+  it('displays file attachments as download links in messages', () => {
+    const messagesWithFile: Message[] = [
+      {
+        id: 11,
+        text: 'Here is the report',
+        sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' },
+        attachments: [{ id: 2, url: 'https://s3.example.com/report.pdf', name: 'report.pdf', size: 1048576, type: 'application/pdf' }],
+        created_at: '2026-03-24T10:00:00Z',
+      },
+    ]
+    renderWithProviders(
+      <ChatPanel projectId="1" messages={messagesWithFile} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+    )
+    expect(screen.getByText('Here is the report')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /report\.pdf/i })
+    expect(link).toHaveAttribute('href', 'https://s3.example.com/report.pdf')
+    expect(link).toHaveAttribute('download')
+  })
 })

@@ -192,9 +192,23 @@ export const handlers = [
 
   http.post('/api/projects/:projectId/messages', async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
+    const attachments = (body.attachments as Array<{ url: string; name: string; size: number; type: string }>) || []
     return HttpResponse.json(
-      { id: 100, text: body.text, sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' }, attachments: [], created_at: '2026-03-24T12:00:00Z' },
+      {
+        id: 100,
+        text: body.text || '',
+        sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' },
+        attachments: attachments.map((a, i) => ({ id: 200 + i, ...a })),
+        created_at: '2026-03-24T12:00:00Z',
+      },
       { status: 201 },
+    )
+  }),
+
+  http.post('/api/projects/:projectId/upload', async () => {
+    return HttpResponse.json(
+      { upload_url: 'https://s3.example.com/presigned-put', file_url: 'https://s3.example.com/uploads/file.png' },
+      { status: 200 },
     )
   }),
 ]
