@@ -6,14 +6,8 @@ import { LoginPage } from './features/auth/pages/LoginPage'
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage'
 import { DashboardPage } from './features/dashboard/pages/DashboardPage'
-
-function ProjectPlaceholder() {
-  return <div>Project (Phase F3)</div>
-}
-
-function InvitePlaceholder() {
-  return <div>Invite Accept (Phase F3)</div>
-}
+import { ProjectPage } from './features/project/pages/ProjectPage'
+import { InviteAcceptPage } from './features/project/pages/InviteAcceptPage'
 
 export default function App() {
   return (
@@ -25,8 +19,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectPlaceholder /></ProtectedRoute>} />
-          <Route path="/invite/:token" element={<InvitePlaceholder />} />
+          <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
