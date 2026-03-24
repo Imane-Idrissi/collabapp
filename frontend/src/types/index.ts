@@ -51,11 +51,18 @@ export interface Task {
 
 export interface Message {
   id: number
-  sender: { id: number; name: string; avatar_color: string } | null
+  sender: { id: number; name: string; avatar_color: string }
   text: string
   attachments: Attachment[]
-  is_extraction_marker: boolean
   created_at: string
+}
+
+export const EXTRACTION_MARKER = '──────── Tasks extracted ────────'
+
+export interface BoardEvent {
+  type: 'board_event'
+  event: 'task:created' | 'task:updated' | 'task:moved' | 'task:deleted' | 'column:created' | 'column:renamed' | 'column:deleted'
+  payload: Record<string, unknown>
 }
 
 export interface Attachment {

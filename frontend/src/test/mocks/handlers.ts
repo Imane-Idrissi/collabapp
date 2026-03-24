@@ -173,4 +173,28 @@ export const handlers = [
     }
     return HttpResponse.json({ project: { id: 1, name: 'CollabApp' } })
   }),
+
+  http.get('/api/projects/:projectId/messages', ({ request }) => {
+    const url = new URL(request.url)
+    const before = url.searchParams.get('before')
+    const messages = [
+      { id: 1, text: 'Hey team, let\'s plan the sprint', sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' }, attachments: [], created_at: '2026-03-24T10:00:00Z' },
+      { id: 2, text: 'I think we should focus on auth first', sender: { id: 2, name: 'Alex', avatar_color: '#10b981' }, attachments: [], created_at: '2026-03-24T10:01:00Z' },
+      { id: 3, text: '──────── Tasks extracted ────────', sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' }, attachments: [], created_at: '2026-03-24T10:02:00Z' },
+      { id: 4, text: 'Sounds good, let me start on the login page', sender: { id: 2, name: 'Alex', avatar_color: '#10b981' }, attachments: [], created_at: '2026-03-24T10:03:00Z' },
+    ]
+    if (before) {
+      const filtered = messages.filter(m => m.id < Number(before))
+      return HttpResponse.json({ messages: filtered })
+    }
+    return HttpResponse.json({ messages })
+  }),
+
+  http.post('/api/projects/:projectId/messages', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return HttpResponse.json(
+      { id: 100, text: body.text, sender: { id: 1, name: 'Imane', avatar_color: '#6366f1' }, attachments: [], created_at: '2026-03-24T12:00:00Z' },
+      { status: 201 },
+    )
+  }),
 ]

@@ -48,11 +48,12 @@ describe('ProjectPage', () => {
     expect(screen.getByText('Build frontend')).toBeInTheDocument()
   })
 
-  it('shows chat placeholder', async () => {
+  it('shows chat panel with messages', async () => {
     renderProjectPage()
     await waitFor(() => {
-      expect(screen.getByText('Chat coming in Phase F5')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
     })
+    expect(screen.getByText('Send')).toBeInTheDocument()
   })
 
   it('opens edit project modal on name click', async () => {

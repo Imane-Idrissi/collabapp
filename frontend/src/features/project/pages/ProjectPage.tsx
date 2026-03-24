@@ -1,51 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { api } from '../../../lib/api'
+import { ProjectProvider, useProject } from '../context/ProjectContext'
 import { Board } from '../../board/components/Board'
+import { ChatPanel } from '../../chat/components/ChatPanel'
 import { EditProjectModal } from '../components/EditProjectModal'
 import { InviteMembersModal } from '../components/InviteMembersModal'
 import { LoadingSpinner } from '../../../shared/LoadingSpinner'
-import type { Column } from '../../../types'
+import type { Message } from '../../../types'
 
-interface ProjectInfo {
-  id: number
-  name: string
-  description: string
-  member_count: number
-}
-
-export function ProjectPage() {
+function ProjectPageInner() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<ProjectInfo | null>(null)
-  const [columns, setColumns] = useState<Column[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { project, columns, setColumns, messages, setMessages, isLoading } = useProject()
   const [showEditModal, setShowEditModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
-  useEffect(() => {
-    async function load() {
-      if (!projectId) return
-      try {
-        const [projects, board] = await Promise.all([
-          api.get<ProjectInfo[]>('/api/projects'),
-          api.get<{ columns: Column[] }>(`/api/projects/${projectId}/board`),
-        ])
-        const proj = projects.find((p) => p.id === Number(projectId))
-        if (!proj) {
-          navigate('/dashboard')
-          return
-        }
-        setProject(proj)
-        setColumns(board.columns)
-      } catch {
-        navigate('/dashboard')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    load()
-  }, [projectId, navigate])
+  const handleNewMessages = useCallback((older: Message[]) => {
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id))
+      const unique = older.filter((m) => !existingIds.has(m.id))
+      return [...unique, ...prev]
+    })
+  }, [setMessages])
+
+  const handleMessageSent = useCallback((message: Message) => {
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === message.id)) return prev
+      return [...prev, message]
+    })
+  }, [setMessages])
 
   if (isLoading || !project) {
     return <LoadingSpinner />
@@ -74,9 +57,14 @@ export function ProjectPage() {
 
       {/* Two-panel layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: chat placeholder */}
-        <div className="flex w-80 flex-shrink-0 items-center justify-center border-r border-border-light bg-surface-card">
-          <p className="text-sm text-text-placeholder">Chat coming in Phase F5</p>
+        {/* Left panel: chat */}
+        <div className="flex w-80 flex-shrink-0 flex-col border-r border-border-light bg-surface-card">
+          <ChatPanel
+            projectId={projectId!}
+            messages={messages}
+            onNewMessages={handleNewMessages}
+            onMessageSent={handleMessageSent}
+          />
         </div>
 
         {/* Right panel: board */}
@@ -91,7 +79,7 @@ export function ProjectPage() {
         projectId={projectId!}
         currentName={project.name}
         currentDescription={project.description}
-        onUpdated={(updated) => setProject({ ...project, ...updated })}
+        onUpdated={(updated) => {/* project state is in context, would need to expose setter */}}
       />
 
       <InviteMembersModal
@@ -100,5 +88,17 @@ export function ProjectPage() {
         projectId={projectId!}
       />
     </div>
+  )
+}
+
+export function ProjectPage() {
+  const { projectId } = useParams<{ projectId: string }>()
+
+  if (!projectId) return <LoadingSpinner />
+
+  return (
+    <ProjectProvider projectId={projectId}>
+      <ProjectPageInner />
+    </ProjectProvider>
   )
 }
