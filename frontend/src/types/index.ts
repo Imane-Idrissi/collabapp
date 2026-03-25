@@ -72,3 +72,9 @@ export interface Attachment {
   size: number
   type: string
 }
+
+export interface Suggestion {
+  name: string
+  description: string
+  priority: 'high' | 'medium' | 'low'
+}
