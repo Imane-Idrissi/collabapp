@@ -62,6 +62,7 @@ function ProjectPageInner() {
           <ChatPanel
             projectId={projectId!}
             messages={messages}
+            columns={columns}
             onNewMessages={handleNewMessages}
             onMessageSent={handleMessageSent}
           />

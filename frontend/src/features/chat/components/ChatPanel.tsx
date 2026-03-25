@@ -1,24 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import type { Message, Attachment } from '../../../types'
+import type { Message, Attachment, Column, Suggestion, Task } from '../../../types'
 import { EXTRACTION_MARKER } from '../../../types'
 import { Avatar } from '../../../shared/Avatar'
 import { api } from '../../../lib/api'
 import { AttachmentButton } from './AttachmentButton'
 import { MessageAttachments } from './MessageAttachments'
+import { ExtractTasksButton } from '../../ai/components/ExtractTasksButton'
+import { AITaskModal } from '../../ai/components/AITaskModal'
 
 interface ChatPanelProps {
   projectId: string
   messages: Message[]
+  columns: Column[]
   onNewMessages: (messages: Message[]) => void
   onMessageSent: (message: Message) => void
+  onTasksAdded?: (tasks: Task[]) => void
 }
 
-export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }: ChatPanelProps) {
+export function ChatPanel({ projectId, messages, columns, onNewMessages, onMessageSent, onTasksAdded }: ChatPanelProps) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(true)
@@ -106,6 +111,26 @@ export function ChatPanel({ projectId, messages, onNewMessages, onMessageSent }:
 
   return (
     <div className="flex h-full flex-col">
+      {/* Extract Tasks */}
+      <div className="border-b border-border-light px-4 py-2">
+        <ExtractTasksButton
+          projectId={projectId}
+          disabled={messages.length === 0}
+          onSuggestions={(s) => setSuggestions(s)}
+        />
+      </div>
+
+      {/* AI Task Modal */}
+      {suggestions !== null && (
+        <AITaskModal
+          suggestions={suggestions}
+          columns={columns}
+          projectId={projectId}
+          onTasksAdded={(tasks) => onTasksAdded?.(tasks)}
+          onClose={() => setSuggestions(null)}
+        />
+      )}
+
       {/* Messages */}
       <div
         ref={messagesContainerRef}
