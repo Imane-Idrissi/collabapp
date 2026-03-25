@@ -211,4 +211,27 @@ export const handlers = [
       { status: 200 },
     )
   }),
+
+  http.post('/api/projects/:projectId/extract-tasks', () => {
+    return HttpResponse.json({
+      suggestions: [
+        { name: 'Set up CI pipeline', description: 'Configure GitHub Actions', priority: 'high' },
+        { name: 'Write README', description: 'Add setup instructions', priority: 'low' },
+      ],
+    })
+  }),
+
+  http.post('/api/projects/:projectId/tasks/batch', async ({ request }) => {
+    const body = await request.json() as { tasks: Array<{ name: string; description: string; priority: string; column_id: number }> }
+    const tasks = body.tasks.map((t, i) => ({
+      id: 300 + i,
+      ...t,
+      position: i,
+      creator_id: 1,
+      is_ai_generated: true,
+      version: 1,
+      created_at: '2026-03-25T00:00:00Z',
+    }))
+    return HttpResponse.json({ tasks }, { status: 201 })
+  }),
 ]
