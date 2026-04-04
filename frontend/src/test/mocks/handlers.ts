@@ -18,7 +18,7 @@ export const handlers = [
       )
     }
     return HttpResponse.json(
-      { token: 'fake-jwt-token', user: { ...TEST_USER, name: body.name, email: body.email } },
+      { token: 'fake-jwt-token', refresh_token: 'fake-refresh-token', user: { ...TEST_USER, name: body.name, email: body.email } },
       { status: 201 },
     )
   }),
@@ -32,7 +32,7 @@ export const handlers = [
       )
     }
     return HttpResponse.json(
-      { token: 'fake-jwt-token', user: TEST_USER },
+      { token: 'fake-jwt-token', refresh_token: 'fake-refresh-token', user: TEST_USER },
       { status: 200 },
     )
   }),

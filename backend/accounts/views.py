@@ -66,7 +66,9 @@ class SignupView(APIView):
             avatar_color=avatar_color,
         )
 
-        token = str(RefreshToken.for_user(user).access_token)
+        refresh = RefreshToken.for_user(user)
+        token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
         verify_token = EmailVerifyToken.objects.create(
             user=user,
@@ -81,6 +83,7 @@ class SignupView(APIView):
 
         return Response({
             'token': token,
+            'refresh_token': refresh_token,
             'user': {
                 'id': user.id,
                 'name': user.name,
@@ -115,10 +118,13 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        token = str(RefreshToken.for_user(user).access_token)
+        refresh = RefreshToken.for_user(user)
+        token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
         return Response({
             'token': token,
+            'refresh_token': refresh_token,
             'user': {
                 'id': user.id,
                 'name': user.name,

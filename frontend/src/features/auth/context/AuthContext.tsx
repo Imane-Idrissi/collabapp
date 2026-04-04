@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (name: string, email: string, password: string, confirm_password: string) => {
     const data = await api.post<AuthResponse>('/api/auth/signup', { name, email, password, confirm_password })
     authStorage.setToken(data.token)
+    authStorage.setRefreshToken(data.refresh_token)
     authStorage.setUser(data.user)
     setToken(data.token)
     setUser(data.user)
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const data = await api.post<AuthResponse>('/api/auth/login', { email, password })
     authStorage.setToken(data.token)
+    authStorage.setRefreshToken(data.refresh_token)
     authStorage.setUser(data.user)
     setToken(data.token)
     setUser(data.user)
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     authStorage.removeToken()
+    authStorage.removeRefreshToken()
     authStorage.removeUser()
     setToken(null)
     setUser(null)

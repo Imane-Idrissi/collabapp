@@ -18,7 +18,7 @@ const unverifiedUser: User = {
 describe('EmailVerificationBanner', () => {
   it('renders banner for unverified user', () => {
     render(<EmailVerificationBanner user={unverifiedUser} onUserUpdate={vi.fn()} />)
-    expect(screen.getByText('Your email is not verified.')).toBeInTheDocument()
+    expect(screen.getByText('Your email is not verified. Check your spam folder.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Resend verification email' })).toBeInTheDocument()
     expect(screen.getByText('Wrong email? Update it')).toBeInTheDocument()
   })

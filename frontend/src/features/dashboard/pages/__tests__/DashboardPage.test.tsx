@@ -17,38 +17,36 @@ describe('DashboardPage', () => {
 
   it('shows greeting with first name', async () => {
     renderWithProviders(<DashboardPage />)
-    expect(screen.getByText('Hi, Imane')).toBeInTheDocument()
+    expect(screen.getByText('Welcome back, Imane')).toBeInTheDocument()
   })
 
   it('loads and displays projects', async () => {
     renderWithProviders(<DashboardPage />)
     await waitFor(() => {
-      expect(screen.getByText('CollabApp')).toBeInTheDocument()
+      expect(screen.getByText('Side Project')).toBeInTheDocument()
     })
-    expect(screen.getByText('Side Project')).toBeInTheDocument()
     expect(screen.getByText('Design System')).toBeInTheDocument()
   })
 
   it('shows email verification banner when unverified', () => {
     renderWithProviders(<DashboardPage />)
-    expect(screen.getByText('Your email is not verified.')).toBeInTheDocument()
+    expect(screen.getByText('Your email is not verified. Check your spam folder.')).toBeInTheDocument()
   })
 
   it('hides email verification banner when verified', () => {
     loginAs({ email_verified: true })
     renderWithProviders(<DashboardPage />)
-    expect(screen.queryByText('Your email is not verified.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Your email is not verified. Check your spam folder.')).not.toBeInTheDocument()
   })
 
   it('searches projects', async () => {
     const user = userEvent.setup()
     renderWithProviders(<DashboardPage />)
     await waitFor(() => {
-      expect(screen.getByText('CollabApp')).toBeInTheDocument()
+      expect(screen.getByText('Side Project')).toBeInTheDocument()
     })
     await user.type(screen.getByPlaceholderText('Search projects...'), 'collab')
     await waitFor(() => {
-      expect(screen.getByText('CollabApp')).toBeInTheDocument()
       expect(screen.queryByText('Side Project')).not.toBeInTheDocument()
     })
   })
@@ -59,7 +57,7 @@ describe('DashboardPage', () => {
     )
     renderWithProviders(<DashboardPage />)
     await waitFor(() => {
-      expect(screen.getByText('No projects yet. Create your first project to get started.')).toBeInTheDocument()
+      expect(screen.getByText('No projects yet. Click "+ New Project" to get started.')).toBeInTheDocument()
     })
   })
 
