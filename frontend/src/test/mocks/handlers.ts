@@ -105,6 +105,16 @@ export const handlers = [
     )
   }),
 
+  http.get('/api/projects/:projectId/members', () => {
+    return HttpResponse.json({
+      members: [
+        { id: 1, name: 'Imane', avatar_color: '#6366f1', joined_at: '2026-01-01T00:00:00Z' },
+        { id: 2, name: 'Alex', avatar_color: '#10b981', joined_at: '2026-01-02T00:00:00Z' },
+        { id: 3, name: 'Sara', avatar_color: '#f59e0b', joined_at: '2026-01-03T00:00:00Z' },
+      ],
+    })
+  }),
+
   http.get('/api/projects/:projectId/board', () => {
     return HttpResponse.json({
       columns: [

@@ -74,6 +74,12 @@ export interface Attachment {
   type: string
 }
 
+export interface ProjectMember {
+  id: number
+  name: string
+  avatar_color: string
+}
+
 export interface Suggestion {
   name: string
   description: string

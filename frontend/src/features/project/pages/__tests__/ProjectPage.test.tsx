@@ -53,7 +53,7 @@ describe('ProjectPage', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
     })
-    expect(screen.getByText('Send')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
   })
 
   it('opens edit project modal on name click', async () => {
@@ -74,6 +74,35 @@ describe('ProjectPage', () => {
     })
     await user.click(screen.getByText('Invite Members'))
     expect(screen.getByText('Generate Link')).toBeInTheDocument()
+  })
+
+  it('displays member avatars in header', async () => {
+    renderProjectPage()
+    await waitFor(() => {
+      expect(screen.getByTitle('Imane')).toBeInTheDocument()
+    })
+    expect(screen.getByTitle('Alex')).toBeInTheDocument()
+    expect(screen.getByTitle('Sara')).toBeInTheDocument()
+  })
+
+  it('shows overflow count when many members', async () => {
+    const { http, HttpResponse } = await import('msw')
+    const { server } = await import('../../../../test/mocks/server')
+    const manyMembers = Array.from({ length: 7 }, (_, i) => ({
+      id: i + 1,
+      name: `Member ${i + 1}`,
+      avatar_color: '#6366f1',
+      joined_at: '2026-01-01T00:00:00Z',
+    }))
+    server.use(
+      http.get('/api/projects/:projectId/members', () => {
+        return HttpResponse.json({ members: manyMembers })
+      }),
+    )
+    renderProjectPage()
+    await waitFor(() => {
+      expect(screen.getByText('+2')).toBeInTheDocument()
+    })
   })
 
   it('generates invite link', async () => {
