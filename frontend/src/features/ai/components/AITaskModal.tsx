@@ -61,7 +61,7 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
         <div className="mt-4 flex justify-end">
           <button
             onClick={onClose}
-            className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
+            className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors"
           >
             Close
           </button>
@@ -127,7 +127,7 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
       <div className="mt-4 flex justify-end gap-2">
         <button
           onClick={onClose}
-          className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
+          className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors"
         >
           Cancel
         </button>

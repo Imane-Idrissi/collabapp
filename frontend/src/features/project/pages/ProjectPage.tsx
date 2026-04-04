@@ -6,12 +6,12 @@ import { ChatPanel } from '../../chat/components/ChatPanel'
 import { EditProjectModal } from '../components/EditProjectModal'
 import { InviteMembersModal } from '../components/InviteMembersModal'
 import { LoadingSpinner } from '../../../shared/LoadingSpinner'
-import type { Message } from '../../../types'
+import type { Message, Task } from '../../../types'
 
 function ProjectPageInner() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const { project, columns, setColumns, messages, setMessages, isLoading } = useProject()
+  const { project, setProject, columns, setColumns, messages, setMessages, isLoading } = useProject()
   const [showEditModal, setShowEditModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
@@ -29,6 +29,15 @@ function ProjectPageInner() {
       return [...prev, message]
     })
   }, [setMessages])
+
+  const handleTasksAdded = useCallback((tasks: Task[]) => {
+    setColumns((prev) =>
+      prev.map((col) => ({
+        ...col,
+        tasks: [...col.tasks, ...tasks.filter((t) => t.column_id === col.id)],
+      })),
+    )
+  }, [setColumns])
 
   if (isLoading || !project) {
     return <LoadingSpinner />
@@ -65,6 +74,7 @@ function ProjectPageInner() {
             columns={columns}
             onNewMessages={handleNewMessages}
             onMessageSent={handleMessageSent}
+            onTasksAdded={handleTasksAdded}
           />
         </div>
 
@@ -80,7 +90,7 @@ function ProjectPageInner() {
         projectId={projectId!}
         currentName={project.name}
         currentDescription={project.description}
-        onUpdated={(updated) => {/* project state is in context, would need to expose setter */}}
+        onUpdated={(updated) => setProject((prev) => prev ? { ...prev, ...updated } : prev)}
       />
 
       <InviteMembersModal

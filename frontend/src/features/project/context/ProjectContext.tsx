@@ -13,8 +13,9 @@ interface ProjectInfo {
 
 interface ProjectContextValue {
   project: ProjectInfo | null
+  setProject: React.Dispatch<React.SetStateAction<ProjectInfo | null>>
   columns: Column[]
-  setColumns: (columns: Column[]) => void
+  setColumns: React.Dispatch<React.SetStateAction<Column[]>>
   messages: Message[]
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   isLoading: boolean
@@ -142,7 +143,7 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   }, [projectId, token, handleChatMessage, handleBoardEvent])
 
   return (
-    <ProjectContext.Provider value={{ project, columns, setColumns, messages, setMessages, isLoading, wsConnected }}>
+    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, isLoading, wsConnected }}>
       {children}
     </ProjectContext.Provider>
   )

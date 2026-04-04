@@ -36,7 +36,7 @@ export function AttachmentButton({ onFileSelected, onError }: AttachmentButtonPr
         type="button"
         aria-label="Attach file"
         onClick={() => inputRef.current?.click()}
-        className="rounded-lg border border-border-medium px-3 py-2 text-sm text-text-secondary hover:bg-surface-secondary transition-colors"
+        className="rounded-lg border border-border-medium px-3 py-2 text-sm text-text-secondary hover:bg-surface-elevated transition-colors"
       >
         📎
       </button>
