@@ -79,9 +79,9 @@ describe('ProjectPage', () => {
   it('displays member avatars in header', async () => {
     renderProjectPage()
     await waitFor(() => {
-      expect(screen.getByTitle('Imane')).toBeInTheDocument()
+      expect(screen.getAllByTitle('Imane').length).toBeGreaterThanOrEqual(1)
     })
-    expect(screen.getByTitle('Alex')).toBeInTheDocument()
+    expect(screen.getAllByTitle('Alex').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByTitle('Sara')).toBeInTheDocument()
   })
 

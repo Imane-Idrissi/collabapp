@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import type { Column, Message, Task, BoardEvent } from '../../../types'
+import type { Column, Message, ProjectMember, Task, BoardEvent } from '../../../types'
 import { useAuth } from '../../auth/context/AuthContext'
 import { api } from '../../../lib/api'
 import { WebSocketManager } from '../../../lib/websocket'
@@ -18,6 +18,7 @@ interface ProjectContextValue {
   setColumns: React.Dispatch<React.SetStateAction<Column[]>>
   messages: Message[]
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  members: ProjectMember[]
   isLoading: boolean
   wsConnected: boolean
 }
@@ -29,6 +30,7 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   const [project, setProject] = useState<ProjectInfo | null>(null)
   const [columns, setColumns] = useState<Column[]>([])
   const [messages, setMessages] = useState<Message[]>([])
+  const [members, setMembers] = useState<ProjectMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [wsConnected, setWsConnected] = useState(false)
   const wsRef = useRef<WebSocketManager | null>(null)
@@ -104,15 +106,17 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
     async function load() {
       if (!projectId || !token) return
       try {
-        const [projects, board, chat] = await Promise.all([
+        const [projects, board, chat, membersRes] = await Promise.all([
           api.get<ProjectInfo[]>('/api/projects'),
           api.get<{ columns: Column[] }>(`/api/projects/${projectId}/board`),
           api.get<{ messages: Message[] }>(`/api/projects/${projectId}/messages`),
+          api.get<{ members: ProjectMember[] }>(`/api/projects/${projectId}/members`),
         ])
         const proj = projects.find((p) => p.id === Number(projectId))
         if (proj) setProject(proj)
         setColumns(board.columns)
         setMessages(chat.messages)
+        setMembers(membersRes.members)
       } catch {
         // Error handled by caller
       } finally {
@@ -143,7 +147,7 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   }, [projectId, token, handleChatMessage, handleBoardEvent])
 
   return (
-    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, isLoading, wsConnected }}>
+    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, members, isLoading, wsConnected }}>
       {children}
     </ProjectContext.Provider>
   )
