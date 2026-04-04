@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary Blue */
-  --color-primary-50: hsl(214, 100%, 97%);
-  --color-primary-100: hsl(214, 95%, 93%);
-  --color-primary-200: hsl(213, 97%, 87%);
-  --color-primary-300: hsl(212, 96%, 78%);
-  --color-primary-400: hsl(213, 94%, 68%);
-  --color-primary-500: hsl(217, 91%, 60%);
-  --color-primary-600: hsl(221, 83%, 53%);
-  --color-primary-700: hsl(224, 76%, 48%);
-  --color-primary-800: hsl(226, 71%, 40%);
-  --color-primary-900: hsl(224, 64%, 33%);
+  /* Primary Teal */
+  --color-primary-50: hsl(172, 33%, 97%);
+  --color-primary-100: hsl(172, 30%, 92%);
+  --color-primary-200: hsl(172, 27%, 82%);
+  --color-primary-300: hsl(172, 25%, 68%);
+  --color-primary-400: hsl(172, 24%, 50%);
+  --color-primary-500: hsl(172, 23%, 38%);
+  --color-primary-600: hsl(172, 22%, 30%);
+  --color-primary-700: hsl(172, 22%, 25%);
+  --color-primary-800: hsl(172, 22%, 20%);
+  --color-primary-900: hsl(172, 22%, 16%);
 
   /* Success Green */
   --color-success-50: hsl(142, 76%, 96%);
@@ -79,7 +79,7 @@
   --color-border-light: hsl(220, 13%, 91%);
   --color-border-medium: hsl(220, 13%, 87%);
   --color-border-strong: hsl(220, 13%, 82%);
-  --color-border-focus: hsl(217, 91%, 60%);
+  --color-border-focus: hsl(172, 23%, 38%);
 
   /* Fonts */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -91,7 +91,7 @@
   --shadow-medium: 0 2px 8px 0 hsl(220 20% 20% / 0.08), 0 1px 3px 0 hsl(220 20% 20% / 0.05);
   --shadow-elevated: 0 4px 16px 0 hsl(220 20% 20% / 0.10), 0 2px 6px 0 hsl(220 20% 20% / 0.06);
   --shadow-floating: 0 8px 32px 0 hsl(220 20% 20% / 0.12), 0 4px 16px 0 hsl(220 20% 20% / 0.08);
-  --shadow-focus: 0 0 0 3px hsl(217 91% 60% / 0.12);
+  --shadow-focus: 0 0 0 3px hsl(172 23% 38% / 0.12);
 }
 
 body {

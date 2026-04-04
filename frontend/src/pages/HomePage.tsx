@@ -1,24 +1,24 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/context/AuthContext'
 
-const features = [
+const steps = [
   {
-    icon: '📋',
-    title: 'Kanban Task Boards',
+    number: '01',
+    title: 'Discuss Freely',
     description:
-      'Organize your work with intuitive drag-and-drop Kanban boards. Create custom columns, move tasks between stages, set priorities, and track progress in real-time as your team works together.',
+      'Your team talks about the project without worrying about structure. Ideas, questions, tangents. Just think out loud.',
   },
   {
-    icon: '💬',
-    title: 'Real-Time Chat & Messaging',
+    number: '02',
+    title: 'AI Drafts the Tasks',
     description:
-      'Connect with your team through instant messaging powered by WebSocket technology. Share files, send messages, and stay connected with real-time updates synced instantly across all devices.',
+      'One click. AI reads what was said and gives you a list of tasks to start from. Not perfect, but not zero either.',
   },
   {
-    icon: '🤖',
-    title: 'AI Task Extraction',
+    number: '03',
+    title: 'Review and Go',
     description:
-      'Powered by Google Gemini AI, the system analyzes your chat conversations and automatically suggests relevant tasks. Discuss your project naturally, and the AI identifies actionable items — turning conversations into organized workflows.',
+      'Look at what the AI suggested, change what needs changing, and add the tasks to your board. You skip the hardest part: starting from a blank page.',
   },
 ]
 
@@ -72,16 +72,17 @@ export function HomePage() {
         <div className="pointer-events-none absolute -bottom-20 left-1/2 h-[350px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.08)_0%,transparent_70%)] blur-3xl" />
 
         <h1 className="relative mb-8 text-5xl font-extrabold leading-tight tracking-tight text-[hsl(172,22%,20%)] sm:text-6xl lg:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-          The Future of Team{' '}
+          Talk First.{' '}
           <br />
-          Collaboration is{' '}
+          Organize{' '}
           <span className="bg-[linear-gradient(135deg,#1d4ed8,#10b981,#f97316,#10b981,#1d4ed8)] bg-[length:400%_400%] bg-clip-text text-transparent animate-[shimmer_4.5s_ease-in-out_infinite]">
-            Here
+            Later
           </span>
         </h1>
         <p className="relative mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-[#334155]" style={{ fontWeight: 450 }}>
-          Enhance your team collaboration with Kanban boards and AI extraction tools.
-          Discuss naturally with your team and let AI decide which tasks you need to perform.
+          Your team discusses a project freely. When the conversation is done,
+          AI reads it and drafts the tasks for you. You review, adjust, and add them
+          to your board. You never have to think about tasks from scratch.
         </p>
         <div className="relative mb-12 flex flex-wrap items-center justify-center gap-5">
           {user ? (
@@ -110,26 +111,35 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Features — animated gradient border */}
+      {/* Workflow — animated gradient border */}
       <div className="mx-4 mb-24 rounded-[4rem] bg-[linear-gradient(135deg,#1d4ed8,#10b981,#f97316,#10b981,#1d4ed8)] bg-[length:400%_400%] p-[2px] shadow-[0_20px_80px_rgba(0,0,0,0.15)] animate-[shimmer_4.5s_ease-in-out_infinite] sm:mx-6">
         <section className="relative rounded-[calc(4rem-2px)] bg-[hsl(172,22%,20%)] px-8 py-20 sm:px-16">
-          <h2 className="mb-16 text-center text-4xl font-extrabold tracking-tight text-[hsl(60,100%,96%)]">
-            Powerful Features for Modern Teams
+          <h2 className="mb-4 text-center text-4xl font-extrabold tracking-tight text-[hsl(60,100%,96%)]">
+            From Messy Discussion to Clear Action
           </h2>
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-            {features.map((feature, i) => (
-              <div
-                key={feature.title}
-                className="rounded-[2rem] border-2 border-white/40 bg-white/90 p-10 text-center shadow-[0_8px_32px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-all duration-300 animate-[fadeInUp_1s_ease-out_both] hover:-translate-y-2 hover:border-white/60 hover:bg-white/95 hover:shadow-[0_25px_60px_rgba(0,0,0,0.2)]"
-                style={{ animationDelay: `${0.2 + i * 0.2}s` }}
-              >
-                <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2rem] border-2 border-[hsl(172,22%,20%)] bg-white/80 text-4xl shadow-medium animate-[pulse_4s_ease-in-out_infinite] transition-transform hover:scale-110 hover:bg-white/95 hover:shadow-[0_12px_48px_rgba(0,0,0,0.15)]" style={{ animationDelay: `${1 + i}s` }}>
-                  {feature.icon}
+          <p className="mx-auto mb-16 max-w-xl text-center text-lg text-white/60">
+            Structure comes after thinking, not during it.
+          </p>
+
+          <div className="mx-auto max-w-5xl">
+            {/* Connecting line (desktop) */}
+            <div className="pointer-events-none absolute left-1/2 top-[13.5rem] hidden h-[2px] w-[55%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent md:block" />
+
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+              {steps.map((step, i) => (
+                <div
+                  key={step.number}
+                  className="relative rounded-[2rem] border border-white/10 bg-white/5 p-10 text-center backdrop-blur-sm transition-all duration-300 animate-[fadeInUp_1s_ease-out_both] hover:-translate-y-2 hover:border-white/20 hover:bg-white/10"
+                  style={{ animationDelay: `${0.2 + i * 0.2}s` }}
+                >
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#1d4ed8,#10b981,#f97316,#10b981,#1d4ed8)] bg-[length:400%_400%] text-xl font-bold text-white shadow-[0_4px_20px_rgba(0,0,0,0.3)] animate-[shimmer_4.5s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.5}s` }}>
+                    {step.number}
+                  </div>
+                  <h3 className="mb-3 text-2xl font-bold text-white">{step.title}</h3>
+                  <p className="text-base leading-relaxed text-white/70">{step.description}</p>
                 </div>
-                <h3 className="mb-4 text-2xl font-bold text-[#1e293b]">{feature.title}</h3>
-                <p className="text-lg leading-relaxed text-[#374151]">{feature.description}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       </div>
