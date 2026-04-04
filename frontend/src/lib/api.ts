@@ -28,6 +28,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (response.status === 401) {
     removeToken()
     removeUser()
+    window.location.replace('/login')
+    throw { status: 401, data: { detail: 'Session expired' } }
   }
 
   if (!response.ok) {
