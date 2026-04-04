@@ -70,15 +70,15 @@ export function DashboardPage() {
   const isSearching = search.trim().length > 0
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[hsl(60,100%,99%)]">
       {/* Top bar */}
-      <header className="border-b border-border-light bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
+      <header className="border-b-2 border-primary-800 bg-white/95 px-6 py-4 shadow-[0_1px_20px_rgba(0,0,0,0.03)] backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-800 text-sm font-bold text-white">
               C
             </div>
-            <span className="text-lg font-bold tracking-tight text-text-primary">CollabApp</span>
+            <span className="text-lg font-bold tracking-tight text-primary-800">CollabApp</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2.5">
@@ -97,56 +97,59 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto max-w-5xl px-8 py-10">
+        {/* Welcome section */}
+        <h1 className="mb-8 text-3xl font-bold tracking-tight text-primary-800">
+          Welcome back, {firstName}
+        </h1>
+
         {/* Email verification banner */}
         {currentUser && !currentUser.email_verified && (
           <EmailVerificationBanner user={currentUser} onUserUpdate={handleUserUpdate} />
         )}
 
-        {/* Section heading */}
-        <h2 className="mb-5 text-xl font-semibold text-text-primary">My Projects</h2>
+        {/* Projects card */}
+        <div className="rounded-2xl border-2 border-primary-800 bg-white p-8 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-text-primary">My Projects</h2>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="whitespace-nowrap rounded-lg bg-primary-800 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 hover:bg-primary-900 hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
+            >
+              + New Project
+            </button>
+          </div>
 
-        {/* Search + Create */}
-        <div className="mb-6 flex items-center gap-4">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search projects..."
-            className="flex-1 rounded-lg border border-border-strong bg-surface-app px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary-500 focus:shadow-focus"
-          />
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="whitespace-nowrap rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 transition-colors"
-          >
-            + New Project
-          </button>
-        </div>
+          {/* Search */}
+          <div className="mb-6">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects..."
+              className="w-full rounded-lg border-2 border-border-medium bg-[hsl(60,100%,99%)] px-4 py-2.5 text-sm outline-none transition-all focus:border-primary-800 focus:shadow-[0_0_0_3px_rgba(0,0,0,0.05)]"
+            />
+          </div>
 
-        {/* Project list */}
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : projects.length === 0 ? (
-          <div className="flex flex-col items-center rounded-xl border border-dashed border-border-medium py-16">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-2xl">
-              📋
+          {/* Project list */}
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : projects.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-base text-primary-600">
+                {isSearching
+                  ? 'No projects match your search.'
+                  : 'No projects yet. Click "+ New Project" to get started.'}
+              </p>
             </div>
-            <p className="mb-1 text-sm font-medium text-text-primary">
-              {isSearching ? 'No projects found' : 'No projects yet'}
-            </p>
-            <p className="text-sm text-text-tertiary">
-              {isSearching
-                ? 'Try a different search term.'
-                : 'Create your first project to get started.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col gap-3">
+              {projects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       <LogoutConfirmationModal
