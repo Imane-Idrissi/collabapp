@@ -8,6 +8,7 @@ import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage'
 import { DashboardPage } from './features/dashboard/pages/DashboardPage'
 import { ProjectPage } from './features/project/pages/ProjectPage'
 import { InviteAcceptPage } from './features/project/pages/InviteAcceptPage'
+import { HomePage } from './pages/HomePage'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
           <Route path="/invite/:token" element={<InviteAcceptPage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
