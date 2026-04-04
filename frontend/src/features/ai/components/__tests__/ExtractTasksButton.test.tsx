@@ -14,15 +14,12 @@ describe('ExtractTasksButton', () => {
     expect(screen.getByRole('button', { name: /extract tasks/i })).toBeInTheDocument()
   })
 
-  it('is disabled with tooltip when disabled prop is true', async () => {
-    const user = userEvent.setup()
+  it('is disabled when disabled prop is true', () => {
     renderWithProviders(
       <ExtractTasksButton projectId="1" disabled={true} onSuggestions={vi.fn()} />,
     )
     const button = screen.getByRole('button', { name: /extract tasks/i })
     expect(button).toBeDisabled()
-    await user.hover(button)
-    expect(screen.getByText('No chat messages yet')).toBeInTheDocument()
   })
 
   it('shows loading state on click and prevents double-click', async () => {
@@ -37,7 +34,7 @@ describe('ExtractTasksButton', () => {
       <ExtractTasksButton projectId="1" disabled={false} onSuggestions={vi.fn()} />,
     )
     await user.click(screen.getByRole('button', { name: /extract tasks/i }))
-    expect(screen.getByText('Analyzing conversation...')).toBeInTheDocument()
+    expect(screen.getByText('Analyzing...')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /analyzing/i })).toBeDisabled()
   })
 

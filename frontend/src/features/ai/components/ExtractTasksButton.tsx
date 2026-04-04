@@ -34,18 +34,21 @@ export function ExtractTasksButton({ projectId, disabled, onSuggestions }: Extra
       <button
         onClick={handleClick}
         disabled={disabled || loading}
-        aria-label={loading ? 'Analyzing conversation...' : 'Extract Tasks'}
-        className="rounded-lg bg-purple-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={loading ? 'Analyzing...' : 'Extract Tasks'}
+        className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
+        style={{
+          background: loading
+            ? 'linear-gradient(135deg, hsl(271,72%,47%) 0%, hsl(271,67%,42%) 100%)'
+            : 'linear-gradient(135deg, hsl(271,81%,56%) 0%, hsl(271,72%,47%) 50%, hsl(271,67%,42%) 100%)',
+          backgroundSize: '200% 200%',
+          border: '2px solid hsl(271,81%,56%)',
+        }}
       >
-        {loading ? 'Analyzing conversation...' : 'Extract Tasks'}
+        <svg className="relative z-10 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        <span className="relative z-10">{loading ? 'Analyzing...' : 'Extract Tasks'}</span>
       </button>
-      {disabled && !loading && (
-        <span className="absolute left-0 top-full mt-1 hidden group-hover:block text-xs text-text-tertiary whitespace-nowrap">
-          No chat messages yet
-        </span>
-      )}
       {error && (
-        <p className="mt-1 text-xs text-error-500">{error}</p>
+        <p className="absolute left-0 top-full mt-1 text-xs text-error-500 whitespace-nowrap">{error}</p>
       )}
     </div>
   )

@@ -177,7 +177,7 @@ export function Board({ columns, projectId, onColumnsChange }: BoardProps) {
   return (
     <>
       {dndError && (
-        <div className="mx-4 mt-2 rounded-lg bg-error-50 px-4 py-2 text-sm text-error-600">
+        <div className="mx-6 mt-3 rounded-lg border border-error-200 bg-error-50 px-4 py-2.5 text-sm font-medium text-error-600">
           {dndError}
         </div>
       )}
@@ -187,7 +187,7 @@ export function Board({ columns, projectId, onColumnsChange }: BoardProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto p-4">
+        <div className="flex gap-6 overflow-x-auto p-6" style={{ minHeight: 'calc(100vh - 200px)' }}>
           {columns
             .sort((a, b) => a.position - b.position)
             .map((column) => (
@@ -204,7 +204,10 @@ export function Board({ columns, projectId, onColumnsChange }: BoardProps) {
 
           <button
             onClick={() => setShowAddColumn(true)}
-            className="flex h-fit w-72 flex-shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-border-medium py-8 text-sm font-medium text-text-tertiary hover:border-primary-500 hover:text-primary-500 transition-colors"
+            className="flex h-fit w-80 min-w-[320px] flex-shrink-0 items-center justify-center rounded-2xl border-2 border-dashed border-border-strong py-10 text-sm text-text-tertiary transition-all duration-200 hover:border-primary-400 hover:text-primary-700 hover:-translate-y-px hover:shadow-medium"
+            style={{ background: 'linear-gradient(135deg, hsl(220,20%,98.5%) 0%, white 100%)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, hsl(172,33%,97%) 0%, hsl(172,30%,92%) 100%)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, hsl(220,20%,98.5%) 0%, white 100%)' }}
           >
             + Add Column
           </button>

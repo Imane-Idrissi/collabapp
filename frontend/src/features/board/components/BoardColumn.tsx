@@ -57,30 +57,37 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
   }
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col rounded-xl bg-surface-card p-3">
+    <div
+      className="flex w-80 min-w-[320px] max-w-[320px] flex-shrink-0 flex-col rounded-2xl border border-border-medium bg-white p-6 shadow-soft transition-all duration-200 hover:shadow-medium"
+    >
       {/* Header */}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between pb-3" style={{ borderBottom: '2px solid hsl(220, 13%, 87%)' }}>
         {isEditing ? (
           <input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleRename}
             onKeyDown={(e) => { if (e.key === 'Enter') handleRename() }}
-            className="flex-1 rounded border border-primary-500 px-2 py-1 text-sm font-semibold outline-none"
+            className="flex-1 rounded-lg border-2 border-primary-500 px-2 py-1 text-base font-semibold outline-none"
             autoFocus
           />
         ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-sm font-semibold text-text-primary hover:text-primary-500"
-            title="Click to rename"
-          >
-            {column.name}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-base font-semibold text-text-primary hover:text-primary-500 transition-colors duration-150"
+              title="Click to rename"
+            >
+              {column.name}
+            </button>
+            <span className="inline-flex min-w-[20px] items-center justify-center rounded-xl bg-surface-elevated px-2 py-0.5 text-xs text-text-secondary">
+              {column.tasks.length}
+            </span>
+          </div>
         )}
         <button
           onClick={handleDelete}
-          className="ml-2 rounded p-1 text-text-tertiary hover:bg-surface-elevated hover:text-error-500"
+          className="ml-2 rounded-lg p-1.5 text-text-tertiary hover:bg-error-50 hover:text-error-500 transition-colors duration-150"
           title="Delete column"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +97,7 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
       </div>
 
       {deleteError && (
-        <p className="mb-2 text-xs text-error-500">{deleteError}</p>
+        <p className="mb-2 rounded-lg bg-error-50 px-2 py-1 text-xs text-error-500">{deleteError}</p>
       )}
 
       {/* Tasks */}
@@ -105,7 +112,10 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
       {/* Add task */}
       <button
         onClick={() => onAddTask(column.id)}
-        className="mt-3 rounded-lg border border-dashed border-border-medium py-2 text-sm text-text-tertiary hover:border-primary-500 hover:text-primary-500 transition-colors"
+        className="mt-4 rounded-xl border-2 border-dashed border-border-strong py-6 text-sm text-text-tertiary transition-all duration-200 hover:border-primary-400 hover:text-primary-700 hover:-translate-y-px hover:shadow-medium"
+        style={{ background: 'linear-gradient(135deg, hsl(220,20%,98.5%) 0%, white 100%)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, hsl(172,33%,97%) 0%, hsl(172,30%,92%) 100%)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, hsl(220,20%,98.5%) 0%, white 100%)' }}
       >
         + Add Task
       </button>

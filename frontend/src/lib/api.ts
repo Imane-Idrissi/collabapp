@@ -52,39 +52,48 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const response = await fetch(`${BASE_URL}${path}`, options)
 
   if (response.status === 401) {
-    // Try refreshing the token once
-    if (!refreshPromise) {
-      refreshPromise = tryRefreshToken().finally(() => { refreshPromise = null })
-    }
-    const newToken = await refreshPromise
+    // Don't intercept 401s from auth endpoints — let them propagate normally
+    const isAuthEndpoint = path.startsWith('/api/auth/')
 
-    if (newToken) {
-      // Retry the original request with the new token
-      headers['Authorization'] = `Bearer ${newToken}`
-      const retryResponse = await fetch(`${BASE_URL}${path}`, { method, headers, body: options.body })
+    if (!isAuthEndpoint) {
+      // Try refreshing the token once
+      if (!refreshPromise) {
+        refreshPromise = tryRefreshToken().finally(() => { refreshPromise = null })
+      }
+      const newToken = await refreshPromise
 
-      if (!retryResponse.ok) {
-        if (retryResponse.status === 401) {
-          removeToken()
-          removeRefreshToken()
-          removeUser()
-          window.location.replace('/login')
-          throw { status: 401, data: { detail: 'Session expired' } }
+      if (newToken) {
+        // Retry the original request with the new token
+        headers['Authorization'] = `Bearer ${newToken}`
+        const retryResponse = await fetch(`${BASE_URL}${path}`, { method, headers, body: options.body })
+
+        if (!retryResponse.ok) {
+          if (retryResponse.status === 401) {
+            removeToken()
+            removeRefreshToken()
+            removeUser()
+            window.location.replace('/login')
+            throw { status: 401, data: { detail: 'Session expired' } }
+          }
+          const error = await retryResponse.json()
+          throw { status: retryResponse.status, data: error }
         }
-        const error = await retryResponse.json()
-        throw { status: retryResponse.status, data: error }
+
+        if (retryResponse.status === 204) return undefined as T
+        return retryResponse.json() as Promise<T>
       }
 
-      if (retryResponse.status === 204) return undefined as T
-      return retryResponse.json() as Promise<T>
+      // Refresh failed — clear everything and redirect
+      removeToken()
+      removeRefreshToken()
+      removeUser()
+      window.location.replace('/login')
+      throw { status: 401, data: { detail: 'Session expired' } }
     }
 
-    // Refresh failed — clear everything and redirect
-    removeToken()
-    removeRefreshToken()
-    removeUser()
-    window.location.replace('/login')
-    throw { status: 401, data: { detail: 'Session expired' } }
+    // Auth endpoint 401 — just throw the original error
+    const error = await response.json()
+    throw { status: response.status, data: error }
   }
 
   if (!response.ok) {

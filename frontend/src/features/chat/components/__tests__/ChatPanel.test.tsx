@@ -65,7 +65,7 @@ describe('ChatPanel', () => {
     )
     const input = screen.getByPlaceholderText('Type a message...')
     await user.type(input, 'Hello world')
-    await user.click(screen.getByText('Send'))
+    await user.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => {
       expect(onMessageSent).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'Hello world' }),
@@ -89,7 +89,7 @@ describe('ChatPanel', () => {
     renderWithProviders(
       <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
     )
-    expect(screen.getByText('Send')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   })
 
   it('shows empty state when no messages', () => {

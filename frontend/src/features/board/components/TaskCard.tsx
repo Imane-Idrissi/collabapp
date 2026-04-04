@@ -7,10 +7,16 @@ interface TaskCardProps {
   onClick: () => void
 }
 
-const priorityStyles = {
-  low: 'bg-success-50 text-success-700',
-  medium: 'bg-warning-50 text-warning-700',
-  high: 'bg-error-50 text-error-700',
+const priorityBadge = {
+  low: 'bg-primary-50 text-primary-600 border border-primary-200',
+  medium: 'bg-warning-50 text-warning-600 border border-warning-200',
+  high: 'bg-error-50 text-error-600 border border-error-200',
+}
+
+const priorityBorderColor = {
+  low: 'hsl(217, 91%, 60%)',
+  medium: 'hsl(38, 92%, 50%)',
+  high: 'hsl(0, 84%, 60%)',
 }
 
 export function TaskCard({ task, onClick }: TaskCardProps) {
@@ -23,6 +29,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
+    borderLeft: `4px solid ${priorityBorderColor[task.priority] || 'hsl(220, 13%, 87%)'}`,
   }
 
   return (
@@ -32,20 +39,20 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="w-full text-left rounded-lg bg-white p-3 shadow-subtle hover:shadow-soft transition-shadow border border-border-light"
+      className="w-full cursor-pointer text-left rounded-xl border-2 border-border-medium bg-white p-6 shadow-subtle transition-all duration-200 hover:border-primary-300 hover:shadow-elevated hover:-translate-y-0.5"
     >
-      <p className="text-sm font-medium text-text-primary line-clamp-2">{task.name}</p>
+      <p className="text-sm font-semibold text-[#1a202c] leading-snug line-clamp-2">{task.name}</p>
       {task.description && (
-        <p className="mt-1 text-xs text-text-tertiary line-clamp-2">{task.description}</p>
+        <p className="mt-2 text-[13px] text-[#6b7280] line-clamp-2 leading-relaxed">{task.description}</p>
       )}
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {task.priority && (
-          <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${priorityStyles[task.priority] || ''}`}>
+          <span className={`rounded-xl px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${priorityBadge[task.priority] || ''}`}>
             {task.priority}
           </span>
         )}
         {task.is_ai_generated && (
-          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+          <span className="rounded-xl border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-purple-600">
             AI
           </span>
         )}
@@ -56,19 +63,22 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
 
 export function TaskCardOverlay({ task }: { task: Task }) {
   return (
-    <div className="w-72 rounded-lg bg-white p-3 shadow-floating border border-primary-300 rotate-2">
-      <p className="text-sm font-medium text-text-primary line-clamp-2">{task.name}</p>
+    <div
+      className="w-80 rounded-xl border-2 border-primary-300 bg-white p-6 shadow-floating rotate-2"
+      style={{ borderLeft: `4px solid ${priorityBorderColor[task.priority] || 'hsl(220, 13%, 87%)'}` }}
+    >
+      <p className="text-sm font-semibold text-[#1a202c] line-clamp-2">{task.name}</p>
       {task.description && (
-        <p className="mt-1 text-xs text-text-tertiary line-clamp-2">{task.description}</p>
+        <p className="mt-2 text-[13px] text-[#6b7280] line-clamp-2">{task.description}</p>
       )}
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {task.priority && (
-          <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${priorityStyles[task.priority] || ''}`}>
+          <span className={`rounded-xl px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${priorityBadge[task.priority] || ''}`}>
             {task.priority}
           </span>
         )}
         {task.is_ai_generated && (
-          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+          <span className="rounded-xl border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-purple-600">
             AI
           </span>
         )}
