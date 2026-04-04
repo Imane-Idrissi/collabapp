@@ -110,30 +110,29 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Features — full-width */}
-      <section className="relative bg-[hsl(172,22%,20%)] px-8 py-20 shadow-[0_-8px_40px_rgba(0,0,0,0.1)] sm:px-16">
-        {/* Subtle top highlight */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.2)] to-transparent" />
-
-        <h2 className="mb-16 text-center text-4xl font-extrabold tracking-tight text-[hsl(60,100%,96%)]">
-          Powerful Features for Modern Teams
-        </h2>
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-          {features.map((feature, i) => (
-            <div
-              key={feature.title}
-              className="rounded-[2rem] border-2 border-white/40 bg-white/90 p-10 text-center shadow-[0_8px_32px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-all duration-300 animate-[fadeInUp_1s_ease-out_both] hover:-translate-y-2 hover:border-white/60 hover:bg-white/95 hover:shadow-[0_25px_60px_rgba(0,0,0,0.2)]"
-              style={{ animationDelay: `${0.2 + i * 0.2}s` }}
-            >
-              <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2rem] border-2 border-[hsl(172,22%,20%)] bg-white/80 text-4xl shadow-medium animate-[pulse_4s_ease-in-out_infinite] transition-transform hover:scale-110 hover:bg-white/95 hover:shadow-[0_12px_48px_rgba(0,0,0,0.15)]" style={{ animationDelay: `${1 + i}s` }}>
-                {feature.icon}
+      {/* Features — animated gradient border */}
+      <div className="mx-4 mb-24 rounded-[4rem] bg-[linear-gradient(135deg,#1d4ed8,#10b981,#f97316,#10b981,#1d4ed8)] bg-[length:400%_400%] p-[2px] shadow-[0_20px_80px_rgba(0,0,0,0.15)] animate-[shimmer_4.5s_ease-in-out_infinite] sm:mx-6">
+        <section className="relative rounded-[calc(4rem-2px)] bg-[hsl(172,22%,20%)] px-8 py-20 sm:px-16">
+          <h2 className="mb-16 text-center text-4xl font-extrabold tracking-tight text-[hsl(60,100%,96%)]">
+            Powerful Features for Modern Teams
+          </h2>
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+            {features.map((feature, i) => (
+              <div
+                key={feature.title}
+                className="rounded-[2rem] border-2 border-white/40 bg-white/90 p-10 text-center shadow-[0_8px_32px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-all duration-300 animate-[fadeInUp_1s_ease-out_both] hover:-translate-y-2 hover:border-white/60 hover:bg-white/95 hover:shadow-[0_25px_60px_rgba(0,0,0,0.2)]"
+                style={{ animationDelay: `${0.2 + i * 0.2}s` }}
+              >
+                <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2rem] border-2 border-[hsl(172,22%,20%)] bg-white/80 text-4xl shadow-medium animate-[pulse_4s_ease-in-out_infinite] transition-transform hover:scale-110 hover:bg-white/95 hover:shadow-[0_12px_48px_rgba(0,0,0,0.15)]" style={{ animationDelay: `${1 + i}s` }}>
+                  {feature.icon}
+                </div>
+                <h3 className="mb-4 text-2xl font-bold text-[#1e293b]">{feature.title}</h3>
+                <p className="text-lg leading-relaxed text-[#374151]">{feature.description}</p>
               </div>
-              <h3 className="mb-4 text-2xl font-bold text-[#1e293b]">{feature.title}</h3>
-              <p className="text-lg leading-relaxed text-[#374151]">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-[rgba(148,163,184,0.2)] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-8 py-12 text-center">
