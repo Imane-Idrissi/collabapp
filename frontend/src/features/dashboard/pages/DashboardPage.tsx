@@ -70,7 +70,7 @@ export function DashboardPage() {
   const isSearching = search.trim().length > 0
 
   return (
-    <div className="min-h-screen bg-surface-app">
+    <div className="min-h-screen bg-white">
       {/* Top bar */}
       <header className="border-b border-border-light bg-white px-6 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
@@ -81,7 +81,12 @@ export function DashboardPage() {
             <span className="text-lg font-bold tracking-tight text-text-primary">CollabApp</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-text-secondary">Hi, {firstName}</span>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: currentUser?.avatar_color ?? '#64748b' }}>
+                {(currentUser?.name ?? '').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+              <span className="text-sm font-medium text-text-primary">{firstName}</span>
+            </div>
             <button
               onClick={() => setShowLogoutModal(true)}
               className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors"
@@ -108,7 +113,7 @@ export function DashboardPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects..."
-            className="flex-1 rounded-lg border border-border-medium px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary-500 focus:shadow-focus"
+            className="flex-1 rounded-lg border border-border-strong bg-surface-app px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary-500 focus:shadow-focus"
           />
           <button
             onClick={() => setShowCreateModal(true)}

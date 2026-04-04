@@ -49,7 +49,7 @@ export function EmailVerificationBanner({ user, onUserUpdate }: EmailVerificatio
 
   return (
     <div className="mb-6 rounded-lg border border-warning-200 bg-warning-50 p-4">
-      <p className="text-sm font-medium text-warning-800">Your email is not verified.</p>
+      <p className="text-sm font-medium text-warning-800">Your email is not verified. Check your spam folder.</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         {resendStatus === 'sent' ? (
           <span className="text-sm text-success-600">Verification email sent!</span>
@@ -57,7 +57,7 @@ export function EmailVerificationBanner({ user, onUserUpdate }: EmailVerificatio
           <button
             onClick={handleResend}
             disabled={resendStatus === 'sending'}
-            className="text-sm font-medium text-primary-500 hover:text-primary-600 disabled:opacity-50"
+            className="text-sm font-medium text-primary-500 underline underline-offset-2 hover:text-primary-600 disabled:opacity-50"
           >
             Resend verification email
           </button>
@@ -65,7 +65,7 @@ export function EmailVerificationBanner({ user, onUserUpdate }: EmailVerificatio
         <span className="text-text-placeholder">·</span>
         <button
           onClick={() => setShowUpdateForm(!showUpdateForm)}
-          className="text-sm font-medium text-primary-500 hover:text-primary-600"
+          className="text-sm font-medium text-primary-500 underline underline-offset-2 hover:text-primary-600"
         >
           Wrong email? Update it
         </button>
