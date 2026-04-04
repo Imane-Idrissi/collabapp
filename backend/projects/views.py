@@ -192,6 +192,32 @@ def _check_project_membership(request, project_id):
     return project, None
 
 
+class ProjectMemberListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        members = ProjectMember.objects.filter(
+            project=project,
+        ).select_related('user').order_by('joined_at')
+
+        data = {
+            'members': [
+                {
+                    'id': m.user.id,
+                    'name': m.user.name,
+                    'avatar_color': m.user.avatar_color,
+                    'joined_at': m.joined_at,
+                }
+                for m in members
+            ],
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class ColumnListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 

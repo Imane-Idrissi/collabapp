@@ -693,3 +693,47 @@ class TestLoadBoard:
         response = self.client.get(self.url)
         task_names = [t['name'] for t in response.data['columns'][0]['tasks']]
         assert task_names == ['First', 'Second']
+
+
+@pytest.mark.django_db
+class TestListMembers:
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='imane@example.com', name='Imane', password='StrongPass1',
+        )
+        self.project = _create_project(self.user, 'My Project')
+        self.url = f'/api/projects/{self.project.id}/members'
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_list_members_without_auth_returns_401(self):
+        client = APIClient()
+        response = client.get(self.url)
+        assert response.status_code == 401
+
+    def test_list_members_as_non_member_returns_403(self):
+        other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(other).access_token}')
+        response = client.get(self.url)
+        assert response.status_code == 403
+
+    def test_list_members_returns_member_list(self):
+        other = User.objects.create_user(
+            email='alex@example.com', name='Alex', password='StrongPass1',
+            avatar_color='#10b981',
+        )
+        ProjectMember.objects.create(project=self.project, user=other)
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert len(response.data['members']) == 2
+        names = [m['name'] for m in response.data['members']]
+        assert 'Imane' in names
+        assert 'Alex' in names
+        member = response.data['members'][0]
+        assert 'id' in member
+        assert 'name' in member
+        assert 'avatar_color' in member
+        assert 'joined_at' in member
