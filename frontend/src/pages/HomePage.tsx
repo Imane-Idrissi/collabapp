@@ -65,9 +65,13 @@ export function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-5xl px-8 pb-16 pt-32 text-center animate-[fadeInUp_1s_ease-out]">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)]" />
-        <h1 className="mb-8 text-5xl font-extrabold leading-tight tracking-tight text-[hsl(172,22%,20%)] sm:text-6xl lg:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      <section className="relative mx-auto max-w-5xl px-8 pb-20 pt-32 text-center animate-[fadeInUp_1s_ease-out]">
+        {/* Decorative gradient orbs */}
+        <div className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.12)_0%,transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 top-40 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle,rgba(29,78,216,0.1)_0%,transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/2 h-[350px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.08)_0%,transparent_70%)] blur-3xl" />
+
+        <h1 className="relative mb-8 text-5xl font-extrabold leading-tight tracking-tight text-[hsl(172,22%,20%)] sm:text-6xl lg:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
           The Future of Team{' '}
           <br />
           Collaboration is{' '}
@@ -75,11 +79,11 @@ export function HomePage() {
             Here
           </span>
         </h1>
-        <p className="mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-[#334155]" style={{ fontWeight: 450 }}>
+        <p className="relative mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-[#334155]" style={{ fontWeight: 450 }}>
           Enhance your team collaboration with Kanban boards and AI extraction tools.
           Discuss naturally with your team and let AI decide which tasks you need to perform.
         </p>
-        <div className="mb-12 flex flex-wrap items-center justify-center gap-5">
+        <div className="relative mb-12 flex flex-wrap items-center justify-center gap-5">
           {user ? (
             <Link
               to="/dashboard"
@@ -106,8 +110,11 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="mx-auto mb-24 w-[calc(100vw-2rem)] rounded-[4rem] border border-[hsl(172,22%,15%)] bg-[hsl(172,22%,20%)] px-8 py-16 shadow-[0_20px_80px_rgba(0,0,0,0.15)] sm:px-16">
+      {/* Features — full-width */}
+      <section className="relative bg-[hsl(172,22%,20%)] px-8 py-20 shadow-[0_-8px_40px_rgba(0,0,0,0.1)] sm:px-16">
+        {/* Subtle top highlight */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.2)] to-transparent" />
+
         <h2 className="mb-16 text-center text-4xl font-extrabold tracking-tight text-[hsl(60,100%,96%)]">
           Powerful Features for Modern Teams
         </h2>
