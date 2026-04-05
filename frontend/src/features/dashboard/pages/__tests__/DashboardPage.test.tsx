@@ -87,7 +87,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Log Out' }))
     await waitFor(() => {
-      expect(window.location.pathname).toBe('/login')
+      expect(localStorage.getItem('token')).toBeNull()
     })
   })
 

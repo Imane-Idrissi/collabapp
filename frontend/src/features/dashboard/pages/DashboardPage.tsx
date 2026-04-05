@@ -53,7 +53,7 @@ export function DashboardPage() {
 
   function handleLogout() {
     logout()
-    navigate('/login')
+    window.location.href = '/'
   }
 
   function handleUserUpdate(updatedUser: User) {
