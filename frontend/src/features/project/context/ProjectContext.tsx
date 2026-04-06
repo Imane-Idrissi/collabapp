@@ -21,6 +21,13 @@ interface ProjectContextValue {
   members: ProjectMember[]
   isLoading: boolean
   wsConnected: boolean
+  aiEnabled: boolean
+  setAiEnabled: React.Dispatch<React.SetStateAction<boolean>>
+  hasApiKey: boolean
+  setHasApiKey: React.Dispatch<React.SetStateAction<boolean>>
+  maskedApiKey: string
+  setMaskedApiKey: React.Dispatch<React.SetStateAction<string>>
+  isCreator: boolean
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
@@ -33,6 +40,10 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   const [members, setMembers] = useState<ProjectMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [wsConnected, setWsConnected] = useState(false)
+  const [aiEnabled, setAiEnabled] = useState(false)
+  const [hasApiKey, setHasApiKey] = useState(false)
+  const [maskedApiKey, setMaskedApiKey] = useState('')
+  const [isCreator, setIsCreator] = useState(false)
   const wsRef = useRef<WebSocketManager | null>(null)
   const messageIdsRef = useRef<Set<number>>(new Set())
 
@@ -108,13 +119,17 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
       try {
         const [projects, board, chat, membersRes] = await Promise.all([
           api.get<ProjectInfo[]>('/api/projects'),
-          api.get<{ columns: Column[] }>(`/api/projects/${projectId}/board`),
+          api.get<{ columns: Column[]; ai_enabled: boolean; has_api_key: boolean; masked_api_key: string; is_creator: boolean }>(`/api/projects/${projectId}/board`),
           api.get<{ messages: Message[] }>(`/api/projects/${projectId}/messages`),
           api.get<{ members: ProjectMember[] }>(`/api/projects/${projectId}/members`),
         ])
         const proj = projects.find((p) => p.id === Number(projectId))
         if (proj) setProject(proj)
         setColumns(board.columns)
+        setAiEnabled(board.ai_enabled)
+        setHasApiKey(board.has_api_key)
+        setMaskedApiKey(board.masked_api_key)
+        setIsCreator(board.is_creator)
         setMessages(chat.messages)
         setMembers(membersRes.members)
       } catch {
@@ -147,7 +162,7 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   }, [projectId, token, handleChatMessage, handleBoardEvent])
 
   return (
-    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, members, isLoading, wsConnected }}>
+    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, members, isLoading, wsConnected, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator }}>
       {children}
     </ProjectContext.Provider>
   )

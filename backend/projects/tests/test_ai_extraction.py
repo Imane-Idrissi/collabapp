@@ -35,6 +35,10 @@ GEMINI_RESPONSE = [
 @pytest.mark.django_db
 class TestExtractTasks:
 
+    @pytest.fixture(autouse=True)
+    def _set_gemini_key(self, settings):
+        settings.GEMINI_API_KEY = 'test-key'
+
     def setup_method(self):
         self.user, self.project, self.column = _setup()
         self.client = _auth_client(self.user)

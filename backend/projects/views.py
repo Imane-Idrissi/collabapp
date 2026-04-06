@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chat.models import Message
+from projects.encryption import decrypt_api_key, encrypt_api_key
 from projects.models import Column, InviteToken, Project, ProjectMember, Task
 
 logger = logging.getLogger(__name__)
@@ -311,7 +312,7 @@ def _serialize_task(task):
         'creator_id': task.creator_id,
         'is_ai_generated': task.is_ai_generated,
         'version': task.version,
-        'created_at': task.created_at,
+        'created_at': str(task.created_at),
     }
 
 
@@ -421,6 +422,9 @@ class BoardView(APIView):
             project=project,
         ).prefetch_related('tasks').order_by('position')
 
+        has_project_key = project.has_gemini_key
+        ai_enabled = has_project_key or bool(django_settings.GEMINI_API_KEY)
+
         data = {
             'columns': [
                 {
@@ -434,6 +438,10 @@ class BoardView(APIView):
                 }
                 for col in columns
             ],
+            'ai_enabled': ai_enabled,
+            'has_api_key': has_project_key,
+            'masked_api_key': project.masked_gemini_key if has_project_key else '',
+            'is_creator': project.creator_id == request.user.id,
         }
         return Response(data, status=status.HTTP_200_OK)
 
@@ -455,8 +463,9 @@ Messages:
 """
 
 
-def call_gemini(messages):
-    client = genai.Client(api_key=django_settings.GEMINI_API_KEY)
+def call_gemini(messages, api_key=None):
+    key = api_key or django_settings.GEMINI_API_KEY
+    client = genai.Client(api_key=key)
     conversation = '\n'.join(
         f"{m['sender']}: {m['text']}" for m in messages
     )
@@ -498,6 +507,15 @@ class ExtractTasksView(APIView):
         if not messages.exists():
             return Response({'suggestions': []}, status=status.HTTP_200_OK)
 
+        gemini_key = None
+        if project.has_gemini_key:
+            gemini_key = decrypt_api_key(project.encrypted_gemini_key)
+        elif not django_settings.GEMINI_API_KEY:
+            return Response(
+                {'detail': 'No API key configured. Add a Gemini API key in project settings.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         project.extraction_running = True
         project.save()
 
@@ -506,7 +524,7 @@ class ExtractTasksView(APIView):
                 {'sender': m.sender.name, 'text': m.text}
                 for m in messages
             ]
-            suggestions = call_gemini(message_data)
+            suggestions = call_gemini(message_data, api_key=gemini_key)
 
             Message.objects.create(
                 project=project,
@@ -518,12 +536,21 @@ class ExtractTasksView(APIView):
             project.save()
 
             return Response({'suggestions': suggestions}, status=status.HTTP_200_OK)
-        except Exception:
+        except Exception as e:
             logger.exception('Gemini extraction failed')
             project.extraction_running = False
             project.save()
+
+            error_msg = str(e)
+            if 'RESOURCE_EXHAUSTED' in error_msg or '429' in error_msg:
+                detail = 'Gemini API quota exceeded. Check your plan and billing at ai.google.dev, or try again later.'
+            elif 'INVALID' in error_msg or '403' in error_msg or '401' in error_msg:
+                detail = 'Invalid Gemini API key. Please update your key in project settings.'
+            else:
+                detail = 'AI extraction failed. Please try again.'
+
             return Response(
-                {'detail': 'AI extraction failed. Please try again.'},
+                {'detail': detail},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -568,3 +595,49 @@ class BatchCreateTasksView(APIView):
             {'tasks': [_serialize_task(t) for t in created_tasks]},
             status=status.HTTP_201_CREATED,
         )
+
+
+class APIKeyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        if project.creator_id != request.user.id:
+            return Response(
+                {'detail': 'Only the project creator can manage the API key.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        api_key = request.data.get('api_key', '').strip()
+        if not api_key:
+            return Response(
+                {'api_key': ['This field is required.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        project.encrypted_gemini_key = encrypt_api_key(api_key)
+        project.save()
+
+        return Response({
+            'has_key': True,
+            'masked_key': project.masked_gemini_key,
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, project_id):
+        project, error = _check_project_membership(request, project_id)
+        if error:
+            return error
+
+        if project.creator_id != request.user.id:
+            return Response(
+                {'detail': 'Only the project creator can manage the API key.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        project.encrypted_gemini_key = ''
+        project.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

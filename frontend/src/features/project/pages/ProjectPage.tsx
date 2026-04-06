@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ProjectProvider, useProject } from '../context/ProjectContext'
 import { Board } from '../../board/components/Board'
 import { ChatPanel } from '../../chat/components/ChatPanel'
+import { APIKeyBanner } from '../components/APIKeyBanner'
 import { EditProjectModal } from '../components/EditProjectModal'
 import { InviteMembersModal } from '../components/InviteMembersModal'
 import { Avatar } from '../../../shared/Avatar'
@@ -12,7 +13,7 @@ import type { Message, Task } from '../../../types'
 function ProjectPageInner() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const { project, setProject, columns, setColumns, messages, setMessages, members, isLoading } = useProject()
+  const { project, setProject, columns, setColumns, messages, setMessages, members, isLoading, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator } = useProject()
   const [showEditModal, setShowEditModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [chatCollapsed, setChatCollapsed] = useState(false)
@@ -98,14 +99,43 @@ function ProjectPageInner() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors duration-150"
-          >
-            Invite Members
-          </button>
+          <div className="flex items-center gap-2">
+            {isCreator && hasApiKey && (
+              <APIKeyBanner
+                projectId={projectId!}
+                hasApiKey={hasApiKey}
+                maskedApiKey={maskedApiKey}
+                onKeySet={(hasKey, maskedKey) => {
+                  setHasApiKey(hasKey)
+                  setMaskedApiKey(maskedKey)
+                  setAiEnabled(hasKey)
+                }}
+              />
+            )}
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-border-medium px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors duration-150"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+              Invite
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* API Key Banner — only visible to the project creator when no key is set */}
+      {isCreator && !aiEnabled && !hasApiKey && (
+        <APIKeyBanner
+          projectId={projectId!}
+          hasApiKey={false}
+          maskedApiKey=""
+          onKeySet={(hasKey, maskedKey) => {
+            setHasApiKey(hasKey)
+            setMaskedApiKey(maskedKey)
+            setAiEnabled(hasKey)
+          }}
+        />
+      )}
 
       {/* Two-panel layout */}
       <div className="flex flex-1 overflow-hidden">
@@ -134,6 +164,7 @@ function ProjectPageInner() {
               projectId={projectId!}
               messages={messages}
               columns={columns}
+              aiEnabled={aiEnabled}
               onNewMessages={handleNewMessages}
               onMessageSent={handleMessageSent}
               onTasksAdded={handleTasksAdded}

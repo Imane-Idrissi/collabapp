@@ -1,6 +1,7 @@
 from django.urls import path
 from chat.views import MessageListCreateView, UploadView
 from projects.views import (
+    APIKeyView,
     BatchCreateTasksView,
     BoardView,
     ColumnDetailView,
@@ -30,4 +31,5 @@ urlpatterns = [
     path('/<int:project_id>/upload', UploadView.as_view(), name='upload'),
     path('/<int:project_id>/extract-tasks', ExtractTasksView.as_view(), name='extract-tasks'),
     path('/<int:project_id>/tasks/batch', BatchCreateTasksView.as_view(), name='batch-create-tasks'),
+    path('/<int:project_id>/api-key', APIKeyView.as_view(), name='api-key'),
 ]

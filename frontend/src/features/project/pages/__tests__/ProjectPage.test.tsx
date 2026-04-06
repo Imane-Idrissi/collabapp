@@ -70,9 +70,9 @@ describe('ProjectPage', () => {
     const user = userEvent.setup()
     renderProjectPage()
     await waitFor(() => {
-      expect(screen.getByText('Invite Members')).toBeInTheDocument()
+      expect(screen.getByText('Invite')).toBeInTheDocument()
     })
-    await user.click(screen.getByText('Invite Members'))
+    await user.click(screen.getByText('Invite'))
     expect(screen.getByText('Generate Link')).toBeInTheDocument()
   })
 
@@ -109,9 +109,9 @@ describe('ProjectPage', () => {
     const user = userEvent.setup()
     renderProjectPage()
     await waitFor(() => {
-      expect(screen.getByText('Invite Members')).toBeInTheDocument()
+      expect(screen.getByText('Invite')).toBeInTheDocument()
     })
-    await user.click(screen.getByText('Invite Members'))
+    await user.click(screen.getByText('Invite'))
     await user.click(screen.getByText('Generate Link'))
     await waitFor(() => {
       expect(screen.getByDisplayValue(/invite-token-abc123/)).toBeInTheDocument()

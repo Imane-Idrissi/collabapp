@@ -1,13 +1,27 @@
 from django.conf import settings
 from django.db import models
 
+from projects.encryption import decrypt_api_key
+
 
 class Project(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_projects')
     extraction_running = models.BooleanField(default=False)
+    encrypted_gemini_key = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def has_gemini_key(self):
+        return bool(self.encrypted_gemini_key)
+
+    @property
+    def masked_gemini_key(self):
+        if not self.encrypted_gemini_key:
+            return ''
+        plaintext = decrypt_api_key(self.encrypted_gemini_key)
+        return f'····{plaintext[-4:]}' if len(plaintext) >= 4 else '····'
 
     def __str__(self):
         return self.name

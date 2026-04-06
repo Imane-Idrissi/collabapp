@@ -133,6 +133,10 @@ export const handlers = [
         },
         { id: 3, name: 'Done', position: 2, tasks: [] },
       ],
+      ai_enabled: true,
+      has_api_key: false,
+      masked_api_key: '',
+      is_creator: true,
     })
   }),
 
@@ -220,6 +224,22 @@ export const handlers = [
       { upload_url: 'https://s3.example.com/presigned-put', file_url: 'https://s3.example.com/uploads/file.png' },
       { status: 200 },
     )
+  }),
+
+  http.put('/api/projects/:projectId/api-key', async ({ request }) => {
+    const body = await request.json() as Record<string, string>
+    if (!body.api_key?.trim()) {
+      return HttpResponse.json({ api_key: ['This field is required.'] }, { status: 400 })
+    }
+    const last4 = body.api_key.length >= 4 ? body.api_key.slice(-4) : ''
+    return HttpResponse.json({
+      has_key: true,
+      masked_key: last4 ? `····${last4}` : '····',
+    })
+  }),
+
+  http.delete('/api/projects/:projectId/api-key', () => {
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.post('/api/projects/:projectId/extract-tasks', () => {
