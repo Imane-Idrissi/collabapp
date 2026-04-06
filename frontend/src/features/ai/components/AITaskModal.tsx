@@ -62,7 +62,7 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
 
   if (suggestions.length === 0) {
     return (
-      <Modal isOpen={true} onClose={onClose} title="Suggested Tasks" size="lg">
+      <Modal isOpen={true} onClose={onClose} title="Suggested Tasks" size="xl">
         <p className="text-sm text-text-secondary">No tasks found in the recent discussion.</p>
         <div className="mt-4 flex justify-end">
           <button
@@ -77,7 +77,7 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
   }
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="Suggested Tasks" size="lg">
+    <Modal isOpen={true} onClose={onClose} title="Suggested Tasks" size="xl">
       {/* Header info */}
       <p className="mb-4 text-sm text-text-tertiary">
         {tasks.length} tasks extracted from your conversation. Deselect, edit, or change columns before adding.
@@ -129,11 +129,11 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
                 />
 
                 {/* Priority + Column */}
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2">
                   <select
                     value={task.priority}
                     onChange={(e) => updateTask(i, { priority: e.target.value as Suggestion['priority'] })}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium outline-none ${PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.low}`}
+                    className={`border px-2.5 py-0.5 text-xs font-medium outline-none ${PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.low}`}
                   >
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -143,7 +143,7 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
                   <select
                     value={task.column_id}
                     onChange={(e) => updateTask(i, { column_id: Number(e.target.value) })}
-                    className="rounded-full border border-border-medium bg-white px-2.5 py-0.5 text-xs font-medium text-text-secondary outline-none"
+                    className="border border-border-medium bg-white px-2.5 py-0.5 text-xs font-medium text-text-secondary outline-none"
                   >
                     {columns.map((col) => (
                       <option key={col.id} value={col.id}>{col.name}</option>
@@ -173,23 +173,34 @@ export function AITaskModal({ suggestions, columns, projectId, onTasksAdded, onC
       )}
 
       {/* Footer */}
-      <div className="mt-4 flex items-center justify-between border-t border-border-light pt-4">
-        <span className="text-xs text-text-tertiary">
+      <div className="mt-5 flex items-center justify-between border-t border-border-light pt-4">
+        <span className="text-sm text-text-tertiary">
           {selectedCount} of {tasks.length} selected
         </span>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg border border-border-medium px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-elevated transition-colors"
+            className="border-2 border-border-medium px-5 py-2.5 text-sm font-semibold text-text-secondary hover:bg-surface-elevated hover:border-border-dark transition-all duration-150"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={selectedCount === 0 || submitting || successCount !== null}
-            className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white shadow-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 enabled:hover:shadow-elevated enabled:hover:-translate-y-0.5"
+            style={{ background: 'linear-gradient(135deg, hsl(271,81%,56%) 0%, hsl(271,72%,47%) 50%, hsl(271,67%,42%) 100%)' }}
           >
-            {submitting ? 'Adding...' : `Add ${selectedCount} to Board`}
+            {submitting ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                Adding...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                {`Add ${selectedCount} to Board`}
+              </>
+            )}
           </button>
         </div>
       </div>

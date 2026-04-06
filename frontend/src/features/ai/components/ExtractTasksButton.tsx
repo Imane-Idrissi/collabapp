@@ -37,7 +37,7 @@ export function ExtractTasksButton({ projectId, disabled, onSuggestions }: Extra
         aria-label={loading ? 'Analyzing...' : 'Extract Tasks'}
         className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-medium disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 enabled:hover:shadow-elevated enabled:hover:-translate-y-0.5"
         style={{
-          background: loading
+          backgroundImage: loading
             ? 'linear-gradient(135deg, hsl(271,72%,47%) 0%, hsl(271,67%,42%) 100%)'
             : 'linear-gradient(135deg, hsl(271,81%,56%) 0%, hsl(271,72%,47%) 50%, hsl(271,67%,42%) 100%)',
           backgroundSize: '200% 200%',
