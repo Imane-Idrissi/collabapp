@@ -526,12 +526,6 @@ class ExtractTasksView(APIView):
             ]
             suggestions = call_gemini(message_data, api_key=gemini_key)
 
-            Message.objects.create(
-                project=project,
-                sender=request.user,
-                text=EXTRACTION_MARKER,
-            )
-
             project.extraction_running = False
             project.save()
 
@@ -590,6 +584,12 @@ class BatchCreateTasksView(APIView):
                 is_ai_generated=True,
             )
             created_tasks.append(task)
+
+        Message.objects.create(
+            project=project,
+            sender=request.user,
+            text=EXTRACTION_MARKER,
+        )
 
         return Response(
             {'tasks': [_serialize_task(t) for t in created_tasks]},

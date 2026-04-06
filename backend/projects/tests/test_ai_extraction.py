@@ -79,9 +79,9 @@ class TestExtractTasks:
         assert len(response.data['suggestions']) == 2
         assert response.data['suggestions'][0]['name'] == 'Set up CI pipeline'
 
-        # Extraction marker inserted
+        # No marker inserted yet (marker is inserted when tasks are added to board)
         marker = Message.objects.filter(project=self.project, text=EXTRACTION_MARKER).first()
-        assert marker is not None
+        assert marker is None
 
         # Flag reset
         self.project.refresh_from_db()
@@ -156,3 +156,7 @@ class TestBatchCreateTasks:
         assert response.data['tasks'][0]['is_ai_generated'] is True
         assert response.data['tasks'][1]['is_ai_generated'] is True
         assert Task.objects.filter(project=self.project, is_ai_generated=True).count() == 2
+
+        # Extraction marker inserted after batch create
+        marker = Message.objects.filter(project=self.project, text=EXTRACTION_MARKER).first()
+        assert marker is not None
