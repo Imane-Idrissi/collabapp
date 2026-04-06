@@ -470,7 +470,7 @@ def call_gemini(messages, api_key=None):
         f"{m['sender']}: {m['text']}" for m in messages
     )
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-2.5-flash',
         contents=GEMINI_PROMPT + conversation,
         config={'response_mime_type': 'application/json'},
     )
