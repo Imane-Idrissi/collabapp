@@ -5,9 +5,10 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  size?: 'md' | 'lg'
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   useEffect(() => {
     if (!isOpen) return
     function handleEscape(e: KeyboardEvent) {
@@ -22,7 +23,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
       <div className="fixed inset-0 bg-surface-overlay/50" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-floating">
+      <div className={`relative z-10 w-full rounded-2xl bg-white p-6 shadow-floating ${size === 'lg' ? 'max-w-lg' : 'max-w-md'}`}>
         <h2 className="mb-4 text-lg font-semibold text-text-primary">{title}</h2>
         {children}
       </div>

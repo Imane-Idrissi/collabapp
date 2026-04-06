@@ -47,7 +47,7 @@ describe('AITaskModal', () => {
     expect(screen.getByDisplayValue('Write README')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Add setup instructions')).toBeInTheDocument()
     // Priority dropdowns show AI-suggested values
-    const prioritySelects = screen.getAllByDisplayValue('high')
+    const prioritySelects = screen.getAllByDisplayValue('High')
     expect(prioritySelects.length).toBeGreaterThanOrEqual(1)
     // Column dropdowns default to first column
     const columnSelects = screen.getAllByDisplayValue('To Do')
@@ -74,7 +74,7 @@ describe('AITaskModal', () => {
     const checkboxes = screen.getAllByRole('checkbox')
     await user.click(checkboxes[0])
     await user.click(checkboxes[1])
-    expect(screen.getByRole('button', { name: /add to board/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /add.*to board/i })).toBeDisabled()
   })
 
   it('sends only selected tasks with edited values to batch API', async () => {
@@ -101,7 +101,7 @@ describe('AITaskModal', () => {
     const checkboxes = screen.getAllByRole('checkbox')
     await user.click(checkboxes[1])
     // Click Add to Board
-    await user.click(screen.getByRole('button', { name: /add to board/i }))
+    await user.click(screen.getByRole('button', { name: /add.*to board/i }))
     await waitFor(() => {
       expect(capturedBody).not.toBeNull()
     })
@@ -120,7 +120,7 @@ describe('AITaskModal', () => {
       }),
     )
     renderWithProviders(<AITaskModal {...defaultProps} />)
-    await user.click(screen.getByRole('button', { name: /add to board/i }))
+    await user.click(screen.getByRole('button', { name: /add.*to board/i }))
     expect(screen.getByText('Adding...')).toBeInTheDocument()
   })
 
@@ -145,9 +145,9 @@ describe('AITaskModal', () => {
     renderWithProviders(
       <AITaskModal {...defaultProps} onClose={onClose} onTasksAdded={onTasksAdded} />,
     )
-    await user.click(screen.getByRole('button', { name: /add to board/i }))
+    await user.click(screen.getByRole('button', { name: /add.*to board/i }))
     await waitFor(() => {
-      expect(screen.getByText('2 tasks added!')).toBeInTheDocument()
+      expect(screen.getByText('2 tasks added to the board!')).toBeInTheDocument()
     })
     expect(onTasksAdded).toHaveBeenCalled()
     vi.advanceTimersByTime(1500)
@@ -168,11 +168,11 @@ describe('AITaskModal', () => {
       }),
     )
     renderWithProviders(<AITaskModal {...defaultProps} />)
-    await user.click(screen.getByRole('button', { name: /add to board/i }))
+    await user.click(screen.getByRole('button', { name: /add.*to board/i }))
     await waitFor(() => {
       expect(screen.getByText(/failed/i)).toBeInTheDocument()
     })
-    expect(screen.getByRole('button', { name: /add to board/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /add.*to board/i })).toBeEnabled()
   })
 
   it('shows empty state with Close button when no suggestions', () => {
@@ -180,7 +180,7 @@ describe('AITaskModal', () => {
       <AITaskModal {...defaultProps} suggestions={[]} />,
     )
     expect(screen.getByText('No tasks found in the recent discussion.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /add to board/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /add.*to board/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
   })
 

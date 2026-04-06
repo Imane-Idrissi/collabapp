@@ -26,7 +26,7 @@ const markerMessages: Message[] = [
 describe('ChatPanel', () => {
   it('displays messages with sender names', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByText('Hey team')).toBeInTheDocument()
     expect(screen.getByText('Imane')).toBeInTheDocument()
@@ -36,7 +36,7 @@ describe('ChatPanel', () => {
 
   it('shows extraction markers as styled dividers', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={markerMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={markerMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByText('Tasks extracted')).toBeInTheDocument()
     expect(screen.getByText('Back to discussion')).toBeInTheDocument()
@@ -76,7 +76,7 @@ describe('ChatPanel', () => {
   it('clears input after sending', async () => {
     const user = userEvent.setup()
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     const input = screen.getByPlaceholderText('Type a message...')
     await user.type(input, 'Hello{Enter}')
@@ -87,21 +87,21 @@ describe('ChatPanel', () => {
 
   it('disables Send button when input is empty', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   })
 
   it('shows empty state when no messages', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={[]} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={[]} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
   })
 
   it('shows attachment button in input area', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByRole('button', { name: /attach/i })).toBeInTheDocument()
   })
@@ -117,7 +117,7 @@ describe('ChatPanel', () => {
       },
     ]
     renderWithProviders(
-      <ChatPanel projectId="1" messages={messagesWithImage} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={messagesWithImage} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByText('Check this screenshot')).toBeInTheDocument()
     const img = screen.getByRole('img', { name: 'screenshot.png' })
@@ -135,7 +135,7 @@ describe('ChatPanel', () => {
       },
     ]
     renderWithProviders(
-      <ChatPanel projectId="1" messages={messagesWithFile} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={messagesWithFile} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByText('Here is the report')).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /report\.pdf/i })
@@ -145,14 +145,14 @@ describe('ChatPanel', () => {
 
   it('shows Extract Tasks button at top of chat panel', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByRole('button', { name: /extract tasks/i })).toBeInTheDocument()
   })
 
   it('disables Extract Tasks button when messages are empty', () => {
     renderWithProviders(
-      <ChatPanel projectId="1" messages={[]} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={[]} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     expect(screen.getByRole('button', { name: /extract tasks/i })).toBeDisabled()
   })
@@ -169,7 +169,7 @@ describe('ChatPanel', () => {
       }),
     )
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} aiEnabled />,
     )
     await user.click(screen.getByRole('button', { name: /extract tasks/i }))
     await waitFor(() => {
@@ -202,7 +202,7 @@ describe('ChatPanel', () => {
       }),
     )
     renderWithProviders(
-      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} onTasksAdded={onTasksAdded} />,
+      <ChatPanel projectId="1" messages={mockMessages} columns={mockColumns} onNewMessages={vi.fn()} onMessageSent={vi.fn()} onTasksAdded={onTasksAdded} aiEnabled />,
     )
     // Extract
     await user.click(screen.getByRole('button', { name: /extract tasks/i }))
@@ -213,9 +213,9 @@ describe('ChatPanel', () => {
     const checkboxes = screen.getAllByRole('checkbox')
     await user.click(checkboxes[1])
     // Add to board
-    await user.click(screen.getByRole('button', { name: /add to board/i }))
+    await user.click(screen.getByRole('button', { name: /add.*to board/i }))
     await waitFor(() => {
-      expect(screen.getByText('1 tasks added!')).toBeInTheDocument()
+      expect(screen.getByText('1 tasks added to the board!')).toBeInTheDocument()
     })
   })
 })
