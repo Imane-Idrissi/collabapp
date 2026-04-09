@@ -1,11 +1,12 @@
+import os
 import uuid
 
-import boto3
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -51,6 +52,7 @@ def _serialize_message(message):
 
 class UploadView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     def post(self, request, project_id):
         project, error = _check_project_membership(request, project_id)
@@ -61,31 +63,19 @@ class UploadView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        data = serializer.validated_data
-        file_key = f'attachments/{project_id}/{uuid.uuid4().hex}-{data["filename"]}'
-        bucket = settings.AWS_S3_BUCKET
+        uploaded_file = serializer.validated_data['file']
+        filename = f'{uuid.uuid4().hex}-{uploaded_file.name}'
+        rel_path = f'attachments/{project_id}/{filename}'
+        full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
 
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION,
-        )
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, 'wb') as dest:
+            for chunk in uploaded_file.chunks():
+                dest.write(chunk)
 
-        upload_url = s3.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': bucket,
-                'Key': file_key,
-                'ContentType': data['content_type'],
-            },
-            ExpiresIn=300,
-        )
-
-        file_url = f'https://{bucket}.s3.{settings.AWS_S3_REGION}.amazonaws.com/{file_key}'
+        file_url = f'{settings.MEDIA_URL}{rel_path}'
 
         return Response({
-            'upload_url': upload_url,
             'file_url': file_url,
         }, status=status.HTTP_200_OK)
 

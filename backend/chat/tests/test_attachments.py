@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
@@ -21,7 +21,7 @@ def _auth_client(user):
 
 
 @pytest.mark.django_db
-class TestPresignedUploadURL:
+class TestFileUpload:
 
     def setup_method(self):
         self.user = User.objects.create_user(
@@ -31,44 +31,37 @@ class TestPresignedUploadURL:
         self.url = f'/api/projects/{self.project.id}/upload'
         self.client = _auth_client(self.user)
 
-    def test_upload_url_without_auth_returns_401(self):
+    def _make_file(self, name='test.png', content=b'fake-png-data', content_type='image/png'):
+        return SimpleUploadedFile(name, content, content_type=content_type)
+
+    def test_upload_without_auth_returns_401(self):
         client = APIClient()
-        response = client.post(self.url, {'filename': 'test.png', 'content_type': 'image/png', 'size': 1024})
+        response = client.post(self.url, {'file': self._make_file()}, format='multipart')
         assert response.status_code == 401
 
-    def test_upload_url_non_member_returns_403(self):
+    def test_upload_non_member_returns_403(self):
         other = User.objects.create_user(email='other@example.com', name='Other', password='StrongPass1')
         client = _auth_client(other)
-        response = client.post(self.url, {'filename': 'test.png', 'content_type': 'image/png', 'size': 1024})
+        response = client.post(self.url, {'file': self._make_file()}, format='multipart')
         assert response.status_code == 403
 
-    def test_upload_url_missing_filename_returns_400(self):
-        response = self.client.post(self.url, {'content_type': 'image/png', 'size': 1024})
+    def test_upload_missing_file_returns_400(self):
+        response = self.client.post(self.url, {}, format='multipart')
         assert response.status_code == 400
 
-    def test_upload_url_file_too_large_returns_400(self):
-        response = self.client.post(self.url, {
-            'filename': 'big.zip',
-            'content_type': 'application/zip',
-            'size': 10485761,  # > 10MB
-        })
+    def test_upload_file_too_large_returns_400(self):
+        big_file = self._make_file(name='big.zip', content=b'x' * (10485760 + 1), content_type='application/zip')
+        response = self.client.post(self.url, {'file': big_file}, format='multipart')
         assert response.status_code == 400
 
-    @patch('chat.views.boto3')
-    def test_upload_url_success(self, mock_boto3):
-        mock_s3 = MagicMock()
-        mock_boto3.client.return_value = mock_s3
-        mock_s3.generate_presigned_url.return_value = 'https://s3.example.com/presigned'
-
-        response = self.client.post(self.url, {
-            'filename': 'photo.png',
-            'content_type': 'image/png',
-            'size': 5000,
-        })
+    def test_upload_success(self, tmp_path, settings):
+        settings.MEDIA_ROOT = tmp_path
+        response = self.client.post(self.url, {'file': self._make_file(name='photo.png')}, format='multipart')
         assert response.status_code == 200
-        assert 'upload_url' in response.data
         assert 'file_url' in response.data
-        assert response.data['upload_url'] == 'https://s3.example.com/presigned'
+        assert 'upload_url' not in response.data
+        assert response.data['file_url'].startswith('/media/attachments/')
+        assert response.data['file_url'].endswith('-photo.png')
 
 
 @pytest.mark.django_db

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Message, Attachment, Column, Suggestion, Task } from '../../../types'
 import { EXTRACTION_MARKER } from '../../../types'
+import { useAuth } from '../../auth/context/AuthContext'
 import { Avatar } from '../../../shared/Avatar'
 import { api } from '../../../lib/api'
 import { AttachmentButton } from './AttachmentButton'
@@ -12,12 +13,14 @@ interface ChatPanelProps {
   projectId: string
   messages: Message[]
   columns: Column[]
+  aiEnabled?: boolean
   onNewMessages: (messages: Message[]) => void
   onMessageSent: (message: Message) => void
   onTasksAdded?: (tasks: Task[]) => void
 }
 
-export function ChatPanel({ projectId, messages, columns, onNewMessages, onMessageSent, onTasksAdded }: ChatPanelProps) {
+export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessages, onMessageSent, onTasksAdded }: ChatPanelProps) {
+  const { user } = useAuth()
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
@@ -75,11 +78,12 @@ export function ChatPanel({ projectId, messages, columns, onNewMessages, onMessa
     try {
       let attachments: Omit<Attachment, 'id'>[] = []
       if (pendingFile) {
-        const upload = await api.post<{ upload_url: string; file_url: string }>(
+        const formData = new FormData()
+        formData.append('file', pendingFile)
+        const upload = await api.upload<{ file_url: string }>(
           `/api/projects/${projectId}/upload`,
-          { filename: pendingFile.name, content_type: pendingFile.type, size: pendingFile.size },
+          formData,
         )
-        await fetch(upload.upload_url, { method: 'PUT', body: pendingFile })
         attachments = [{ url: upload.file_url, name: pendingFile.name, size: pendingFile.size, type: pendingFile.type }]
       }
       const message = await api.post<Message>(`/api/projects/${projectId}/messages`, {
@@ -117,11 +121,13 @@ export function ChatPanel({ projectId, messages, columns, onNewMessages, onMessa
           <svg className="h-5 w-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
           <h3 className="text-lg font-semibold text-text-primary">Chat</h3>
         </div>
-        <ExtractTasksButton
-          projectId={projectId}
-          disabled={messages.length === 0}
-          onSuggestions={(s) => setSuggestions(s)}
-        />
+        {aiEnabled && (
+          <ExtractTasksButton
+            projectId={projectId}
+            disabled={messages.length === 0}
+            onSuggestions={(s) => setSuggestions(s)}
+          />
+        )}
       </div>
 
       {/* AI Task Modal */}
@@ -158,21 +164,29 @@ export function ChatPanel({ projectId, messages, columns, onNewMessages, onMessa
               <div className="flex-1 border-t border-purple-200" />
             </div>
           ) : (
-            <div key={msg.id} className="flex gap-3">
-              <div className="shrink-0">
-                <Avatar name={msg.sender.name} color={msg.sender.avatar_color} size="sm" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-text-primary">{msg.sender.name}</span>
-                  <span className="text-xs text-text-placeholder">{formatTime(msg.created_at)}</span>
+            (() => {
+              const isOwn = msg.sender.id === user?.id
+              return (
+                <div key={msg.id} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                  <div className="shrink-0">
+                    <Avatar name={msg.sender.name} color={msg.sender.avatar_color} size="sm" />
+                  </div>
+                  <div className={`min-w-0 max-w-[75%] ${isOwn ? 'text-right' : ''}`}>
+                    <div className={`flex items-baseline gap-2 ${isOwn ? 'justify-end' : ''}`}>
+                      <span className="text-sm font-medium text-text-primary">{msg.sender.name}</span>
+                      <span className="text-xs text-text-placeholder">{formatTime(msg.created_at)}</span>
+                    </div>
+                    <div
+                      className={`mt-1 rounded-xl px-3 py-2 shadow-subtle ${isOwn ? 'bg-primary-800 text-white' : 'bg-white'}`}
+                      style={isOwn ? {} : { border: '1px solid hsl(220, 13%, 87%)' }}
+                    >
+                      <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed text-left ${isOwn ? 'text-white/90' : 'text-text-secondary'}`}>{msg.text}</p>
+                      {msg.attachments.length > 0 && <MessageAttachments attachments={msg.attachments} isOwn={isOwn} />}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1 rounded-xl bg-white px-3 py-2 shadow-subtle" style={{ border: '1px solid hsl(220, 13%, 87%)' }}>
-                  <p className="text-sm text-text-secondary whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                  {msg.attachments.length > 0 && <MessageAttachments attachments={msg.attachments} />}
-                </div>
-              </div>
-            </div>
+              )
+            })()
           ),
         )}
         <div ref={messagesEndRef} />

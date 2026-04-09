@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 
 class AttachmentSerializer(serializers.Serializer):
-    url = serializers.URLField(required=True)
+    url = serializers.CharField(required=True)
     name = serializers.CharField(required=True, allow_blank=False)
     size = serializers.IntegerField(required=True)
     type = serializers.CharField(required=True, allow_blank=False)
@@ -23,13 +23,11 @@ class SendMessageSerializer(serializers.Serializer):
 
 
 class UploadSerializer(serializers.Serializer):
-    filename = serializers.CharField(required=True, allow_blank=False)
-    content_type = serializers.CharField(required=True, allow_blank=False)
-    size = serializers.IntegerField(required=True)
+    file = serializers.FileField(required=True)
 
     MAX_FILE_SIZE = 10485760  # 10MB
 
-    def validate_size(self, value):
-        if value > self.MAX_FILE_SIZE:
+    def validate_file(self, value):
+        if value.size > self.MAX_FILE_SIZE:
             raise serializers.ValidationError('File size exceeds 10MB limit.')
         return value

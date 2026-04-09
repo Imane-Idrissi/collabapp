@@ -108,10 +108,72 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return response.json() as Promise<T>
 }
 
+async function upload<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {}
+
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (response.status === 401) {
+    const isAuthEndpoint = path.startsWith('/api/auth/')
+
+    if (!isAuthEndpoint) {
+      if (!refreshPromise) {
+        refreshPromise = tryRefreshToken().finally(() => { refreshPromise = null })
+      }
+      const newToken = await refreshPromise
+
+      if (newToken) {
+        headers['Authorization'] = `Bearer ${newToken}`
+        const retryResponse = await fetch(`${BASE_URL}${path}`, { method: 'POST', headers, body: formData })
+
+        if (!retryResponse.ok) {
+          if (retryResponse.status === 401) {
+            removeToken()
+            removeRefreshToken()
+            removeUser()
+            window.location.replace('/login')
+            throw { status: 401, data: { detail: 'Session expired' } }
+          }
+          const error = await retryResponse.json()
+          throw { status: retryResponse.status, data: error }
+        }
+
+        return retryResponse.json() as Promise<T>
+      }
+
+      removeToken()
+      removeRefreshToken()
+      removeUser()
+      window.location.replace('/login')
+      throw { status: 401, data: { detail: 'Session expired' } }
+    }
+
+    const error = await response.json()
+    throw { status: response.status, data: error }
+  }
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw { status: response.status, data: error }
+  }
+
+  return response.json() as Promise<T>
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),
+  upload: <T>(path: string, formData: FormData) => upload<T>(path, formData),
 }

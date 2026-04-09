@@ -221,7 +221,7 @@ export const handlers = [
 
   http.post('/api/projects/:projectId/upload', async () => {
     return HttpResponse.json(
-      { upload_url: 'https://s3.example.com/presigned-put', file_url: 'https://s3.example.com/uploads/file.png' },
+      { file_url: '/media/attachments/1/abc123-file.png' },
       { status: 200 },
     )
   }),
