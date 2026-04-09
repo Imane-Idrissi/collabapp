@@ -8,20 +8,20 @@ interface EmailVerificationBannerProps {
 }
 
 export function EmailVerificationBanner({ user, onUserUpdate }: EmailVerificationBannerProps) {
-  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [showUpdateForm, setShowUpdateForm] = useState(false)
   const [newEmail, setNewEmail] = useState(user.email)
   const [updateError, setUpdateError] = useState('')
   const [updateSuccess, setUpdateSuccess] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  async function handleResend() {
-    setResendStatus('sending')
+  async function handleSend() {
+    setSendStatus('sending')
     try {
       await api.post<MessageResponse>('/api/auth/forgot-password', { email: user.email })
-      setResendStatus('sent')
+      setSendStatus('sent')
     } catch {
-      setResendStatus('idle')
+      setSendStatus('idle')
     }
   }
 
@@ -49,17 +49,17 @@ export function EmailVerificationBanner({ user, onUserUpdate }: EmailVerificatio
 
   return (
     <div className="mb-6 rounded-lg border border-warning-200 bg-warning-50 p-4">
-      <p className="text-sm font-medium text-warning-800">Your email is not verified. Check your spam folder.</p>
+      <p className="text-sm font-medium text-warning-800">Your email is not verified.</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        {resendStatus === 'sent' ? (
-          <span className="text-sm text-success-600">Verification email sent!</span>
+        {sendStatus === 'sent' ? (
+          <span className="text-sm text-success-600">Verification email sent! Check your inbox.</span>
         ) : (
           <button
-            onClick={handleResend}
-            disabled={resendStatus === 'sending'}
+            onClick={handleSend}
+            disabled={sendStatus === 'sending'}
             className="text-sm font-medium text-primary-500 underline underline-offset-2 hover:text-primary-600 disabled:opacity-50"
           >
-            Resend verification email
+            Send verification email
           </button>
         )}
         <span className="text-text-placeholder">·</span>

@@ -53,6 +53,7 @@ export function BoardColumn({ column, projectId, onTaskClick, onAddTask, onColum
       } else {
         setDeleteError('Failed to delete column.')
       }
+      setTimeout(() => setDeleteError(''), 3000)
     }
   }
 

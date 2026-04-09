@@ -141,25 +141,12 @@ class TestSignup:
         # Both have initials "I I" but different colors
         assert user1.avatar_color != user2.avatar_color
 
-    # --- Step 5: Send verification email ---
+    # --- Step 5: Verification email not sent on signup (user-initiated) ---
 
-    @patch('accounts.views.send_verification_email')
-    def test_signup_creates_email_verify_token(self, mock_send):
+    def test_signup_does_not_create_email_verify_token(self):
         self.client.post(self.url, self.valid_data)
         user = User.objects.get(email='imane@example.com')
-        token = EmailVerifyToken.objects.get(user=user)
-        assert token.token is not None
-        assert token.expires_at is not None
-
-    @patch('accounts.views.send_verification_email')
-    def test_signup_calls_send_verification_email(self, mock_send):
-        self.client.post(self.url, self.valid_data)
-        mock_send.assert_called_once()
-
-    @patch('accounts.views.send_verification_email', side_effect=Exception('Email failed'))
-    def test_signup_succeeds_even_if_email_fails(self, mock_send):
-        response = self.client.post(self.url, self.valid_data)
-        assert response.status_code == 201
+        assert not EmailVerifyToken.objects.filter(user=user).exists()
 
     # --- Step 6: Return response ---
 

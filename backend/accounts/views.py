@@ -70,17 +70,6 @@ class SignupView(APIView):
         token = str(refresh.access_token)
         refresh_token = str(refresh)
 
-        verify_token = EmailVerifyToken.objects.create(
-            user=user,
-            token=uuid.uuid4().hex,
-            expires_at=timezone.now() + timedelta(hours=24),
-        )
-
-        try:
-            send_verification_email(user, verify_token.token)
-        except Exception:
-            logger.exception("Failed to send verification email")
-
         return Response({
             'token': token,
             'refresh_token': refresh_token,
