@@ -225,7 +225,7 @@ export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessag
           />
           <AttachmentButton
             onFileSelected={(file) => setPendingFile(file)}
-            onError={() => {}}
+            onError={(msg) => { setError(msg); setTimeout(() => setError(null), 4000) }}
           />
           <button
             onClick={handleSend}

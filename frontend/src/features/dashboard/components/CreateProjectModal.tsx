@@ -13,11 +13,13 @@ export function CreateProjectModal({ isOpen, onClose, onCreated }: CreateProject
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setErrors({})
+    setGeneralError(null)
 
     if (!name.trim()) {
       setErrors({ name: 'Project name is required' })
@@ -26,7 +28,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreated }: CreateProject
 
     setIsSubmitting(true)
     try {
-      const project = await api.post<{ id: number; name: string; description: string }>('/api/projects', { name, description })
+      const project = await api.post<{ id: number; name: string; description: string }>('/api/projects/', { name, description })
       onCreated(project)
       setName('')
       setDescription('')
@@ -38,6 +40,8 @@ export function CreateProjectModal({ isOpen, onClose, onCreated }: CreateProject
           fieldErrors[field] = messages[0]
         }
         setErrors(fieldErrors)
+      } else {
+        setGeneralError('Failed to create project. Please try again.')
       }
     } finally {
       setIsSubmitting(false)
@@ -71,6 +75,8 @@ export function CreateProjectModal({ isOpen, onClose, onCreated }: CreateProject
             placeholder="What's this project about? (optional)"
           />
         </div>
+
+        {generalError && <p className="mb-4 text-sm text-error-500">{generalError}</p>}
 
         <div className="flex gap-3 justify-end">
           <button

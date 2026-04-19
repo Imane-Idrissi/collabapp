@@ -13,7 +13,7 @@ import type { Message, Task } from '../../../types'
 function ProjectPageInner() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const { project, setProject, columns, setColumns, messages, setMessages, members, isLoading, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator } = useProject()
+  const { project, setProject, columns, setColumns, messages, setMessages, members, isLoading, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator, error } = useProject()
   const [showEditModal, setShowEditModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [chatCollapsed, setChatCollapsed] = useState(false)
@@ -67,8 +67,21 @@ function ProjectPageInner() {
     document.addEventListener('mouseup', onMouseUp)
   }
 
-  if (isLoading || !project) {
+  if (isLoading) {
     return <LoadingSpinner />
+  }
+
+  if (!project) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[hsl(60,100%,99%)]">
+        <div className="text-center">
+          <p className="text-sm text-error-500">{error ?? 'Project not found'}</p>
+          <button onClick={() => navigate('/dashboard')} className="mt-4 text-sm font-medium text-primary-500 hover:text-primary-600">
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -4,15 +4,19 @@ import type { MessageResponse } from '../../../types'
 
 export function EmailVerificationBanner() {
   const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSend() {
     setSendStatus('sending')
+    setError(null)
     try {
       await api.post<MessageResponse>('/api/auth/send-verification-email', {})
       setSendStatus('sent')
       setTimeout(() => setSendStatus('idle'), 5000)
     } catch {
       setSendStatus('idle')
+      setError('Failed to send. Try again.')
+      setTimeout(() => setError(null), 5000)
     }
   }
 
@@ -31,6 +35,7 @@ export function EmailVerificationBanner() {
             Send verification email
           </button>
         )}
+        {error && <p className="mt-1 text-sm text-error-500">{error}</p>}
       </div>
     </div>
   )

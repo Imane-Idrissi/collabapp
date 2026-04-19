@@ -28,12 +28,13 @@ interface ProjectContextValue {
   maskedApiKey: string
   setMaskedApiKey: React.Dispatch<React.SetStateAction<string>>
   isCreator: boolean
+  error: string | null
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
 export function ProjectProvider({ projectId, children }: { projectId: string; children: React.ReactNode }) {
-  const { token } = useAuth()
+  const { user } = useAuth()
   const [project, setProject] = useState<ProjectInfo | null>(null)
   const [columns, setColumns] = useState<Column[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -44,6 +45,7 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   const [hasApiKey, setHasApiKey] = useState(false)
   const [maskedApiKey, setMaskedApiKey] = useState('')
   const [isCreator, setIsCreator] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const wsRef = useRef<WebSocketManager | null>(null)
   const messageIdsRef = useRef<Set<number>>(new Set())
 
@@ -115,10 +117,10 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
   // Load initial data
   useEffect(() => {
     async function load() {
-      if (!projectId || !token) return
+      if (!projectId || !user) return
       try {
         const [projects, board, chat, membersRes] = await Promise.all([
-          api.get<ProjectInfo[]>('/api/projects'),
+          api.get<ProjectInfo[]>('/api/projects/'),
           api.get<{ columns: Column[]; ai_enabled: boolean; has_api_key: boolean; masked_api_key: string; is_creator: boolean }>(`/api/projects/${projectId}/board`),
           api.get<{ messages: Message[] }>(`/api/projects/${projectId}/messages`),
           api.get<{ members: ProjectMember[] }>(`/api/projects/${projectId}/members`),
@@ -133,21 +135,20 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
         setMessages(chat.messages)
         setMembers(membersRes.members)
       } catch {
-        // Error handled by caller
+        setError('Failed to load project')
       } finally {
         setIsLoading(false)
       }
     }
     load()
-  }, [projectId, token])
+  }, [projectId, user])
 
   // WebSocket connection
   useEffect(() => {
-    if (!projectId || !token) return
+    if (!projectId) return
 
     const ws = new WebSocketManager({
       projectId,
-      token,
       onChatMessage: handleChatMessage,
       onBoardEvent: handleBoardEvent,
       onConnectionChange: setWsConnected,
@@ -159,10 +160,10 @@ export function ProjectProvider({ projectId, children }: { projectId: string; ch
       ws.disconnect()
       wsRef.current = null
     }
-  }, [projectId, token, handleChatMessage, handleBoardEvent])
+  }, [projectId, handleChatMessage, handleBoardEvent])
 
   return (
-    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, members, isLoading, wsConnected, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator }}>
+    <ProjectContext.Provider value={{ project, setProject, columns, setColumns, messages, setMessages, members, isLoading, wsConnected, aiEnabled, setAiEnabled, hasApiKey, setHasApiKey, maskedApiKey, setMaskedApiKey, isCreator, error }}>
       {children}
     </ProjectContext.Provider>
   )
