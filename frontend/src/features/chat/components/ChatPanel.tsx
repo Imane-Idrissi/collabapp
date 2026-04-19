@@ -27,6 +27,7 @@ export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessag
   const [hasMore, setHasMore] = useState(true)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(true)
@@ -64,7 +65,8 @@ export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessag
         onNewMessages(data.messages)
       }
     } catch {
-      // Silently fail
+      setError('Failed to load messages')
+      setTimeout(() => setError(null), 4000)
     } finally {
       setLoadingOlder(false)
     }
@@ -95,7 +97,8 @@ export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessag
       setPendingFile(null)
       isAtBottomRef.current = true
     } catch {
-      // Silently fail
+      setError('Failed to send message')
+      setTimeout(() => setError(null), 4000)
     } finally {
       setSending(false)
     }
@@ -191,6 +194,13 @@ export function ChatPanel({ projectId, messages, columns, aiEnabled, onNewMessag
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Error notice */}
+      {error && (
+        <div className="mx-5 mb-1 rounded-lg bg-red-50 px-3 py-1.5 text-xs text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Pending file indicator */}
       {pendingFile && (
