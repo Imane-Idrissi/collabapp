@@ -30,8 +30,8 @@ class MockWS {
     this.onmessage?.({ data: JSON.stringify(data) })
   }
 
-  simulateClose() {
-    this.onclose?.()
+  simulateClose(code = 1000) {
+    this.onclose?.({ code } as CloseEvent)
   }
 }
 
@@ -42,17 +42,16 @@ describe('WebSocketManager', () => {
     vi.useFakeTimers()
   })
 
-  it('connects to correct URL with token', () => {
+  it('connects to correct URL without token in query string', () => {
     const ws = new WebSocketManager({
       projectId: '42',
-      token: 'my-jwt',
       onChatMessage: vi.fn(),
       onBoardEvent: vi.fn(),
     })
     ws.connect()
     expect(mockInstances).toHaveLength(1)
     expect(mockInstances[0].url).toContain('/ws/chat/42/')
-    expect(mockInstances[0].url).toContain('token=my-jwt')
+    expect(mockInstances[0].url).not.toContain('token=')
     ws.disconnect()
   })
 
@@ -60,7 +59,6 @@ describe('WebSocketManager', () => {
     const onChatMessage = vi.fn()
     const ws = new WebSocketManager({
       projectId: '1',
-      token: 'token',
       onChatMessage,
       onBoardEvent: vi.fn(),
     })
@@ -82,7 +80,6 @@ describe('WebSocketManager', () => {
     const onBoardEvent = vi.fn()
     const ws = new WebSocketManager({
       projectId: '1',
-      token: 'token',
       onChatMessage: vi.fn(),
       onBoardEvent,
     })
@@ -101,7 +98,6 @@ describe('WebSocketManager', () => {
   it('reconnects on close with exponential backoff', () => {
     const ws = new WebSocketManager({
       projectId: '1',
-      token: 'token',
       onChatMessage: vi.fn(),
       onBoardEvent: vi.fn(),
     })
@@ -128,7 +124,6 @@ describe('WebSocketManager', () => {
   it('does not reconnect after disconnect()', () => {
     const ws = new WebSocketManager({
       projectId: '1',
-      token: 'token',
       onChatMessage: vi.fn(),
       onBoardEvent: vi.fn(),
     })
@@ -143,7 +138,6 @@ describe('WebSocketManager', () => {
     const onConnectionChange = vi.fn()
     const ws = new WebSocketManager({
       projectId: '1',
-      token: 'token',
       onChatMessage: vi.fn(),
       onBoardEvent: vi.fn(),
       onConnectionChange,

@@ -2,11 +2,13 @@ import type { Message, BoardEvent } from '../types'
 
 interface WebSocketManagerOptions {
   projectId: string
-  token: string
   onChatMessage: (message: Message) => void
   onBoardEvent: (event: BoardEvent) => void
   onConnectionChange?: (connected: boolean) => void
 }
+
+const AUTH_FAILURE_CODES = [4401, 4403, 1008]
+const MAX_RECONNECT_ATTEMPTS = 10
 
 export class WebSocketManager {
   private ws: WebSocket | null = null
@@ -24,7 +26,7 @@ export class WebSocketManager {
     this.closed = false
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const url = `${protocol}//${host}/ws/chat/${this.options.projectId}/?token=${this.options.token}`
+    const url = `${protocol}//${host}/ws/chat/${this.options.projectId}/`
 
     this.ws = new WebSocket(url)
 
@@ -46,11 +48,12 @@ export class WebSocketManager {
       }
     }
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this.options.onConnectionChange?.(false)
-      if (!this.closed) {
-        this.scheduleReconnect()
-      }
+      if (this.closed) return
+      if (AUTH_FAILURE_CODES.includes(event.code)) return
+      if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return
+      this.scheduleReconnect()
     }
 
     this.ws.onerror = () => {
