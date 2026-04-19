@@ -1,9 +1,9 @@
-import os
 import uuid
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
@@ -66,14 +66,9 @@ class UploadView(APIView):
         uploaded_file = serializer.validated_data['file']
         filename = f'{uuid.uuid4().hex}-{uploaded_file.name}'
         rel_path = f'attachments/{project_id}/{filename}'
-        full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
 
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, 'wb') as dest:
-            for chunk in uploaded_file.chunks():
-                dest.write(chunk)
-
-        file_url = f'{settings.MEDIA_URL}{rel_path}'
+        saved_path = default_storage.save(rel_path, uploaded_file)
+        file_url = default_storage.url(saved_path)
 
         return Response({
             'file_url': file_url,
