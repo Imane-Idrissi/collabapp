@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from asgiref.sync import async_to_sync
@@ -64,7 +65,8 @@ class UploadView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         uploaded_file = serializer.validated_data['file']
-        filename = f'{uuid.uuid4().hex}-{uploaded_file.name}'
+        ext = os.path.splitext(uploaded_file.name)[1].lower()
+        filename = f'{uuid.uuid4().hex}{ext}'
         rel_path = f'attachments/{project_id}/{filename}'
 
         saved_path = default_storage.save(rel_path, uploaded_file)
@@ -124,7 +126,11 @@ class MessageListCreateView(APIView):
         if error:
             return error
 
-        limit = int(request.query_params.get('limit', 50))
+        try:
+            limit = min(int(request.query_params.get('limit', 50)), 200)
+        except (ValueError, TypeError):
+            return Response({'detail': 'Invalid limit parameter.'}, status=status.HTTP_400_BAD_REQUEST)
+
         before = request.query_params.get('before')
 
         messages = Message.objects.filter(
@@ -132,7 +138,10 @@ class MessageListCreateView(APIView):
         ).select_related('sender').prefetch_related('attachments')
 
         if before:
-            messages = messages.filter(id__lt=int(before))
+            try:
+                messages = messages.filter(id__lt=int(before))
+            except (ValueError, TypeError):
+                return Response({'detail': 'Invalid before parameter.'}, status=status.HTTP_400_BAD_REQUEST)
 
         messages = messages.order_by('-created_at')[:limit]
 

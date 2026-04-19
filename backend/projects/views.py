@@ -493,11 +493,13 @@ class ExtractTasksView(APIView):
         if error:
             return error
 
-        if project.extraction_running:
+        updated = Project.objects.filter(id=project.id, extraction_running=False).update(extraction_running=True)
+        if not updated:
             return Response(
                 {'detail': 'Extraction already in progress.'},
                 status=status.HTTP_409_CONFLICT,
             )
+        project.refresh_from_db()
 
         last_marker = Message.objects.filter(
             project=project, text=EXTRACTION_MARKER,
@@ -513,19 +515,20 @@ class ExtractTasksView(APIView):
         messages = messages.order_by('created_at')
 
         if not messages.exists():
+            project.extraction_running = False
+            project.save()
             return Response({'suggestions': []}, status=status.HTTP_200_OK)
 
         gemini_key = None
         if project.has_gemini_key:
             gemini_key = decrypt_api_key(project.encrypted_gemini_key)
         elif not django_settings.GEMINI_API_KEY:
+            project.extraction_running = False
+            project.save()
             return Response(
                 {'detail': 'No API key configured. Add a Gemini API key in project settings.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        project.extraction_running = True
-        project.save()
 
         try:
             message_data = [

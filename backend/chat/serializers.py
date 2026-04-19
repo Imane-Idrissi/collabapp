@@ -26,7 +26,7 @@ class AttachmentSerializer(serializers.Serializer):
 
 
 class SendMessageSerializer(serializers.Serializer):
-    text = serializers.CharField(required=False, allow_blank=True, default='')
+    text = serializers.CharField(required=False, allow_blank=True, default='', max_length=10000)
     attachments = serializers.ListField(
         child=AttachmentSerializer(),
         required=False,
@@ -49,9 +49,11 @@ class UploadSerializer(serializers.Serializer):
             raise serializers.ValidationError('File size exceeds 10MB limit.')
 
         ext = os.path.splitext(value.name)[1].lower()
+        if not ext:
+            raise serializers.ValidationError('File must have an extension.')
         if ext in BLOCKED_EXTENSIONS:
             raise serializers.ValidationError(f'File type "{ext}" is not allowed.')
-        if ext and ext not in ALLOWED_EXTENSIONS:
+        if ext not in ALLOWED_EXTENSIONS:
             raise serializers.ValidationError(f'File type "{ext}" is not allowed.')
 
         return value

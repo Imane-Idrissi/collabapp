@@ -61,7 +61,7 @@ class TestFileUpload:
         assert 'file_url' in response.data
         assert 'upload_url' not in response.data
         assert response.data['file_url'].startswith('/media/attachments/')
-        assert response.data['file_url'].endswith('-photo.png')
+        assert response.data['file_url'].endswith('.png')
 
 
 @pytest.mark.django_db

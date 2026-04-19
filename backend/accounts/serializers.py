@@ -4,10 +4,10 @@ from accounts.models import User
 
 
 class SignupSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True, allow_blank=False)
+    name = serializers.CharField(required=True, allow_blank=False, max_length=255)
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
-    confirm_password = serializers.CharField(required=True, write_only=True)
+    password = serializers.CharField(required=True, write_only=True, max_length=255)
+    confirm_password = serializers.CharField(required=True, write_only=True, max_length=255)
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -60,19 +60,3 @@ class ResetPasswordSerializer(serializers.Serializer):
         if data.get('password') != data.get('confirm_password'):
             raise serializers.ValidationError({'confirm_password': "Passwords do not match."})
         return data
-
-
-class UpdateEmailSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-
-    def __init__(self, *args, **kwargs):
-        self.current_user = kwargs.pop('current_user', None)
-        super().__init__(*args, **kwargs)
-
-    def validate_email(self, value):
-        queryset = User.objects.filter(email=value)
-        if self.current_user:
-            queryset = queryset.exclude(pk=self.current_user.pk)
-        if queryset.exists():
-            raise serializers.ValidationError("Email already exists.")
-        return value

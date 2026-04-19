@@ -24,18 +24,25 @@ def get_token(user):
     return str(RefreshToken.for_user(user).access_token)
 
 
+def _make_communicator(path, token=None):
+    headers = [(b'origin', b'http://localhost')]
+    if token:
+        headers.append((b'cookie', f'access_token={token}'.encode()))
+    return WebsocketCommunicator(application, path, headers=headers)
+
+
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 class TestChatConsumer:
 
     async def test_connect_without_token_is_rejected(self):
-        communicator = WebsocketCommunicator(application, '/ws/chat/1/')
+        communicator = _make_communicator('/ws/chat/1/')
         connected, _ = await communicator.connect()
         assert connected is False
         await communicator.disconnect()
 
     async def test_connect_with_invalid_token_is_rejected(self):
-        communicator = WebsocketCommunicator(application, '/ws/chat/1/?token=invalid')
+        communicator = _make_communicator('/ws/chat/1/', token='invalid')
         connected, _ = await communicator.connect()
         assert connected is False
         await communicator.disconnect()
@@ -45,7 +52,7 @@ class TestChatConsumer:
         owner = await create_user('owner@example.com', 'Owner')
         project = await create_project_with_member(owner, 'Project')
         token = await get_token(user)
-        communicator = WebsocketCommunicator(application, f'/ws/chat/{project.id}/?token={token}')
+        communicator = _make_communicator(f'/ws/chat/{project.id}/', token=token)
         connected, _ = await communicator.connect()
         assert connected is False
         await communicator.disconnect()
@@ -54,7 +61,7 @@ class TestChatConsumer:
         user = await create_user('imane@example.com', 'Imane')
         project = await create_project_with_member(user, 'Project')
         token = await get_token(user)
-        communicator = WebsocketCommunicator(application, f'/ws/chat/{project.id}/?token={token}')
+        communicator = _make_communicator(f'/ws/chat/{project.id}/', token=token)
         connected, _ = await communicator.connect()
         assert connected is True
         await communicator.disconnect()
@@ -63,7 +70,7 @@ class TestChatConsumer:
         user = await create_user('imane@example.com', 'Imane')
         project = await create_project_with_member(user, 'Project')
         token = await get_token(user)
-        communicator = WebsocketCommunicator(application, f'/ws/chat/{project.id}/?token={token}')
+        communicator = _make_communicator(f'/ws/chat/{project.id}/', token=token)
         connected, _ = await communicator.connect()
         assert connected is True
 
@@ -91,7 +98,7 @@ class TestChatConsumer:
         user = await create_user('imane@example.com', 'Imane')
         project = await create_project_with_member(user, 'Project')
         token = await get_token(user)
-        communicator = WebsocketCommunicator(application, f'/ws/chat/{project.id}/?token={token}')
+        communicator = _make_communicator(f'/ws/chat/{project.id}/', token=token)
         connected, _ = await communicator.connect()
         assert connected is True
 
