@@ -3,16 +3,44 @@ import random
 import uuid
 from datetime import timedelta
 
+from django.conf import settings as django_settings
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User, EmailVerifyToken, PasswordResetToken
-from rest_framework.permissions import IsAuthenticated
-from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, ResetPasswordSerializer, SignupSerializer, UpdateEmailSerializer
+from accounts.serializers import ForgotPasswordSerializer, LoginSerializer, ResetPasswordSerializer, SignupSerializer
 from accounts.utils import send_password_reset_email, send_verification_email
+
+
+def _set_auth_cookies(response, access_token, refresh_token):
+    access_max_age = int(django_settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds())
+    refresh_max_age = int(django_settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
+    cookie_kwargs = {
+        'httponly': django_settings.AUTH_COOKIE_HTTPONLY,
+        'samesite': django_settings.AUTH_COOKIE_SAMESITE,
+        'secure': django_settings.AUTH_COOKIE_SECURE,
+        'path': django_settings.AUTH_COOKIE_PATH,
+    }
+    response.set_cookie('access_token', access_token, max_age=access_max_age, **cookie_kwargs)
+    response.set_cookie('refresh_token', refresh_token, max_age=refresh_max_age, **cookie_kwargs)
+    return response
+
+
+def _clear_auth_cookies(response):
+    cookie_kwargs = {
+        'httponly': django_settings.AUTH_COOKIE_HTTPONLY,
+        'samesite': django_settings.AUTH_COOKIE_SAMESITE,
+        'secure': django_settings.AUTH_COOKIE_SECURE,
+        'path': django_settings.AUTH_COOKIE_PATH,
+    }
+    response.delete_cookie('access_token', **cookie_kwargs)
+    response.delete_cookie('refresh_token', **cookie_kwargs)
+    return response
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +59,10 @@ def get_initials(name):
 
 def pick_avatar_color(name):
     initials = get_initials(name)
-    used_colors = set(
-        User.objects.filter(name__in=User.objects.values_list('name', flat=True))
-        .values_list('avatar_color', flat=True)
-    )
-    # Filter to users with same initials
-    same_initial_users = User.objects.all()
     used_colors = set()
-    for user in same_initial_users:
-        if get_initials(user.name) == initials:
-            used_colors.add(user.avatar_color)
+    for u in User.objects.filter().only('name', 'avatar_color'):
+        if get_initials(u.name) == initials:
+            used_colors.add(u.avatar_color)
     available = [c for c in AVATAR_COLORS if c not in used_colors]
     if available:
         return random.choice(available)
@@ -50,6 +72,7 @@ def pick_avatar_color(name):
 class SignupView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_scope = 'signup'
 
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
@@ -67,12 +90,10 @@ class SignupView(APIView):
         )
 
         refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        access_token = str(refresh.access_token)
+        refresh_token_str = str(refresh)
 
-        return Response({
-            'token': token,
-            'refresh_token': refresh_token,
+        response = Response({
             'user': {
                 'id': user.id,
                 'name': user.name,
@@ -81,11 +102,13 @@ class SignupView(APIView):
                 'avatar_color': user.avatar_color,
             },
         }, status=status.HTTP_201_CREATED)
+        return _set_auth_cookies(response, access_token, refresh_token_str)
 
 
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_scope = 'login'
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -108,12 +131,10 @@ class LoginView(APIView):
             )
 
         refresh = RefreshToken.for_user(user)
-        token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        access_token = str(refresh.access_token)
+        refresh_token_str = str(refresh)
 
-        return Response({
-            'token': token,
-            'refresh_token': refresh_token,
+        response = Response({
             'user': {
                 'id': user.id,
                 'name': user.name,
@@ -122,6 +143,7 @@ class LoginView(APIView):
                 'avatar_color': user.avatar_color,
             },
         }, status=status.HTTP_200_OK)
+        return _set_auth_cookies(response, access_token, refresh_token_str)
 
 
 class VerifyEmailView(APIView):
@@ -168,6 +190,7 @@ VERIFY_MESSAGE = "We've sent a verification email to your inbox. Please verify y
 class ForgotPasswordView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_scope = 'password_reset'
 
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
@@ -185,6 +208,7 @@ class ForgotPasswordView(APIView):
             )
 
         if user.email_verified:
+            PasswordResetToken.objects.filter(user=user).delete()
             token = PasswordResetToken.objects.create(
                 user=user,
                 token=uuid.uuid4().hex,
@@ -199,6 +223,7 @@ class ForgotPasswordView(APIView):
                 status=status.HTTP_200_OK,
             )
         else:
+            EmailVerifyToken.objects.filter(user=user).delete()
             token = EmailVerifyToken.objects.create(
                 user=user,
                 token=uuid.uuid4().hex,
@@ -217,6 +242,7 @@ class ForgotPasswordView(APIView):
 class ResetPasswordView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_scope = 'password_reset'
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
@@ -258,40 +284,62 @@ class ResetPasswordView(APIView):
         )
 
 
-class UpdateEmailView(APIView):
+class LogoutView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        raw_refresh = request.COOKIES.get('refresh_token')
+        if raw_refresh:
+            try:
+                token = RefreshToken(raw_refresh)
+                token.blacklist()
+            except (InvalidToken, TokenError):
+                pass
+
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        return _clear_auth_cookies(response)
+
+
+class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request):
+    def get(self, request):
         user = request.user
+        return Response({
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'email_verified': user.email_verified,
+                'avatar_color': user.avatar_color,
+            },
+        })
 
-        if user.email_verified:
+
+class CookieTokenRefreshView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    throttle_scope = 'token_refresh'
+
+    def post(self, request):
+        raw_refresh = request.COOKIES.get('refresh_token')
+        if not raw_refresh:
             return Response(
-                {'detail': 'Email can only be updated while unverified.'},
-                status=status.HTTP_403_FORBIDDEN,
+                {'detail': 'No refresh token.'},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        serializer = UpdateEmailSerializer(data=request.data, current_user=user)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        new_email = serializer.validated_data['email']
-        user.email = new_email
-        user.save()
-
-        EmailVerifyToken.objects.filter(user=user).delete()
-
-        verify_token = EmailVerifyToken.objects.create(
-            user=user,
-            token=uuid.uuid4().hex,
-            expires_at=timezone.now() + timedelta(hours=24),
-        )
-
         try:
-            send_verification_email(user, verify_token.token)
-        except Exception:
-            logger.exception("Failed to send verification email")
+            refresh = RefreshToken(raw_refresh)
+            access_token = str(refresh.access_token)
+        except (InvalidToken, TokenError):
+            response = Response(
+                {'detail': 'Invalid or expired refresh token.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            return _clear_auth_cookies(response)
 
-        return Response(
-            {'message': f'Email updated. Verification email sent to {new_email}.'},
-            status=status.HTTP_200_OK,
-        )
+        new_refresh_str = str(refresh)
+        response = Response({'refreshed': True})
+        return _set_auth_cookies(response, access_token, new_refresh_str)
