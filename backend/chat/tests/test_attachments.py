@@ -79,7 +79,7 @@ class TestMessageWithAttachments:
         response = self.client.post(self.url, {
             'text': 'Check this file',
             'attachments': [
-                {'url': 'https://s3.example.com/file.pdf', 'name': 'file.pdf', 'size': 1024, 'type': 'application/pdf'},
+                {'url': '/media/attachments/1/file.pdf', 'name': 'file.pdf', 'size': 1024, 'type': 'application/pdf'},
             ],
         }, format='json')
         assert response.status_code == 201
@@ -91,7 +91,7 @@ class TestMessageWithAttachments:
         response = self.client.post(self.url, {
             'text': '',
             'attachments': [
-                {'url': 'https://s3.example.com/img.png', 'name': 'img.png', 'size': 2048, 'type': 'image/png'},
+                {'url': '/media/attachments/1/img.png', 'name': 'img.png', 'size': 2048, 'type': 'image/png'},
             ],
         }, format='json')
         assert response.status_code == 201

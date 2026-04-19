@@ -1,4 +1,16 @@
+import os
+
+from django.conf import settings
 from rest_framework import serializers
+
+BLOCKED_EXTENSIONS = {'.html', '.htm', '.svg', '.js', '.jsx', '.exe', '.sh', '.bat', '.cmd', '.msi', '.php'}
+ALLOWED_EXTENSIONS = {
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.txt', '.csv', '.md', '.json', '.xml',
+    '.zip', '.tar', '.gz',
+    '.mp4', '.mov', '.mp3', '.wav',
+}
 
 
 class AttachmentSerializer(serializers.Serializer):
@@ -6,6 +18,11 @@ class AttachmentSerializer(serializers.Serializer):
     name = serializers.CharField(required=True, allow_blank=False)
     size = serializers.IntegerField(required=True)
     type = serializers.CharField(required=True, allow_blank=False)
+
+    def validate_url(self, value):
+        if not value.startswith(settings.MEDIA_URL):
+            raise serializers.ValidationError('Attachment URL must point to uploaded files.')
+        return value
 
 
 class SendMessageSerializer(serializers.Serializer):
@@ -30,4 +47,11 @@ class UploadSerializer(serializers.Serializer):
     def validate_file(self, value):
         if value.size > self.MAX_FILE_SIZE:
             raise serializers.ValidationError('File size exceeds 10MB limit.')
+
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext in BLOCKED_EXTENSIONS:
+            raise serializers.ValidationError(f'File type "{ext}" is not allowed.')
+        if ext and ext not in ALLOWED_EXTENSIONS:
+            raise serializers.ValidationError(f'File type "{ext}" is not allowed.')
+
         return value
