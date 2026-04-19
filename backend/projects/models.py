@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from projects.encryption import decrypt_api_key
 
@@ -80,10 +83,15 @@ class TaskAssignee(models.Model):
         return f"{self.user} assigned to {self.task}"
 
 
+def _default_invite_expiry():
+    return timezone.now() + timedelta(days=7)
+
+
 class InviteToken(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='invite_tokens')
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=_default_invite_expiry)
 
     def __str__(self):
         return f"Invite for {self.project}"

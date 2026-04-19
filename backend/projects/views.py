@@ -6,7 +6,7 @@ from google import genai
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings as django_settings
-from django.db.models import Count, Subquery
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -19,6 +19,7 @@ from projects.models import Column, InviteToken, Project, ProjectMember, Task
 
 logger = logging.getLogger(__name__)
 from projects.serializers import (
+    BatchCreateTasksSerializer,
     ColumnSerializer,
     CreateProjectSerializer,
     CreateTaskSerializer,
@@ -164,6 +165,13 @@ class JoinProjectView(APIView):
         if not invite:
             return Response(
                 {'token': ['Invalid invite token.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from django.utils import timezone
+        if invite.expires_at < timezone.now():
+            return Response(
+                {'token': ['Invite token has expired.']},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -557,16 +565,15 @@ class BatchCreateTasksView(APIView):
         if error:
             return error
 
-        tasks_data = request.data.get('tasks', [])
-        if not tasks_data:
-            return Response(
-                {'tasks': ['At least one task is required.']},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = BatchCreateTasksSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        tasks_data = serializer.validated_data['tasks']
 
         created_tasks = []
         for t in tasks_data:
-            column = Column.objects.filter(id=t.get('column_id'), project=project).first()
+            column = Column.objects.filter(id=t['column_id'], project=project).first()
             if not column:
                 return Response(
                     {'column_id': ['Invalid column.']},
