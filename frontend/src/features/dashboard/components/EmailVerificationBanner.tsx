@@ -1,12 +1,8 @@
 import { useState } from 'react'
 import { api } from '../../../lib/api'
-import type { User, MessageResponse } from '../../../types'
+import type { MessageResponse } from '../../../types'
 
-interface EmailVerificationBannerProps {
-  user: User
-}
-
-export function EmailVerificationBanner({ user }: EmailVerificationBannerProps) {
+export function EmailVerificationBanner() {
   const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
 
   async function handleSend() {

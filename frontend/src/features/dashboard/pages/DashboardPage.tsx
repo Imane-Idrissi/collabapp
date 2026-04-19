@@ -8,8 +8,6 @@ import { LogoutConfirmationModal } from '../components/LogoutConfirmationModal'
 import { CreateProjectModal } from '../components/CreateProjectModal'
 import { ProjectCard } from '../components/ProjectCard'
 import { LoadingSpinner } from '../../../shared/LoadingSpinner'
-import type { User } from '../../../types'
-import * as authStorage from '../../../lib/auth'
 
 interface ProjectSummary {
   id: number
@@ -38,7 +36,7 @@ export function DashboardPage() {
     setIsLoading(true)
     try {
       const params = query ? `?search=${encodeURIComponent(query)}` : ''
-      const data = await api.get<ProjectSummary[]>(`/api/projects${params}`)
+      const data = await api.get<ProjectSummary[]>(`/api/projects/${params}`)
       setProjects(data)
     } catch {
       // silently fail — empty list shown
@@ -51,17 +49,12 @@ export function DashboardPage() {
     fetchProjects(debouncedSearch)
   }, [debouncedSearch, fetchProjects])
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await logout()
     window.location.href = '/'
   }
 
-  function handleUserUpdate(updatedUser: User) {
-    setCurrentUser(updatedUser)
-    authStorage.setUser(updatedUser)
-  }
-
-  function handleProjectCreated(project: { id: number; name: string; description: string }) {
+function handleProjectCreated(project: { id: number; name: string; description: string }) {
     setShowCreateModal(false)
     navigate(`/projects/${project.id}`)
   }
@@ -105,7 +98,7 @@ export function DashboardPage() {
 
         {/* Email verification banner */}
         {currentUser && !currentUser.email_verified && (
-          <EmailVerificationBanner user={currentUser} onUserUpdate={handleUserUpdate} />
+          <EmailVerificationBanner />
         )}
 
         {/* Projects card */}

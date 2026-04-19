@@ -15,7 +15,7 @@ interface TaskDetailsModalProps {
 export function TaskDetailsModal({ isOpen, onClose, projectId, task, onUpdated, onDeleted }: TaskDetailsModalProps) {
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description)
-  const [priority, setPriority] = useState(task.priority || '')
+  const [priority, setPriority] = useState<string>(task.priority || '')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [generalError, setGeneralError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)

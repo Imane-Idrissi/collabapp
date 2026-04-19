@@ -6,7 +6,7 @@ let mockInstances: MockWS[] = []
 class MockWS {
   url: string
   onopen: (() => void) | null = null
-  onclose: (() => void) | null = null
+  onclose: ((event: CloseEvent) => void) | null = null
   onmessage: ((e: { data: string }) => void) | null = null
   onerror: (() => void) | null = null
 
@@ -16,7 +16,7 @@ class MockWS {
   }
 
   close() {
-    this.onclose?.()
+    this.onclose?.({ code: 1000 } as CloseEvent)
   }
 
   send() {}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -105,7 +105,7 @@ describe('AITaskModal', () => {
     await waitFor(() => {
       expect(capturedBody).not.toBeNull()
     })
-    const tasks = (capturedBody as Record<string, unknown>).tasks as Array<Record<string, unknown>>
+    const tasks = (capturedBody as unknown as Record<string, unknown>).tasks as Array<Record<string, unknown>>
     expect(tasks).toHaveLength(1)
     expect(tasks[0].name).toBe('Set up CI')
     expect(tasks[0].column_id).toBe(1)
