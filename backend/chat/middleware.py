@@ -1,3 +1,5 @@
+from http.cookies import SimpleCookie
+
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from django.contrib.auth.models import AnonymousUser
@@ -14,14 +16,18 @@ def get_user_from_token(token_str):
         return AnonymousUser()
 
 
+def _get_cookie_from_scope(scope, cookie_name):
+    for header_name, header_value in scope.get('headers', []):
+        if header_name == b'cookie':
+            cookie = SimpleCookie(header_value.decode())
+            if cookie_name in cookie:
+                return cookie[cookie_name].value
+    return None
+
+
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
-        query_string = scope.get('query_string', b'').decode()
-        token = None
-        for param in query_string.split('&'):
-            if param.startswith('token='):
-                token = param.split('=', 1)[1]
-                break
+        token = _get_cookie_from_scope(scope, 'access_token')
 
         if token:
             scope['user'] = await get_user_from_token(token)
