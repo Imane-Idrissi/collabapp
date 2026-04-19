@@ -301,6 +301,34 @@ class LogoutView(APIView):
         return _clear_auth_cookies(response)
 
 
+class SendVerificationEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_scope = 'verification_email'
+
+    def post(self, request):
+        user = request.user
+        if user.email_verified:
+            return Response(
+                {'message': 'Email is already verified.'},
+                status=status.HTTP_200_OK,
+            )
+
+        EmailVerifyToken.objects.filter(user=user).delete()
+        token = EmailVerifyToken.objects.create(
+            user=user,
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+        try:
+            send_verification_email(user, token.token)
+        except Exception:
+            logger.exception("Failed to send verification email")
+        return Response(
+            {'message': 'Verification email sent.'},
+            status=status.HTTP_200_OK,
+        )
+
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -18,7 +18,7 @@ export const handlers = [
       )
     }
     return HttpResponse.json(
-      { token: 'fake-jwt-token', refresh_token: 'fake-refresh-token', user: { ...TEST_USER, name: body.name, email: body.email } },
+      { user: { ...TEST_USER, name: body.name, email: body.email } },
       { status: 201 },
     )
   }),
@@ -32,9 +32,29 @@ export const handlers = [
       )
     }
     return HttpResponse.json(
-      { token: 'fake-jwt-token', refresh_token: 'fake-refresh-token', user: TEST_USER },
+      { user: TEST_USER },
       { status: 200 },
     )
+  }),
+
+  http.get('/api/auth/me', () => {
+    const stored = localStorage.getItem('user')
+    if (stored) {
+      return HttpResponse.json({ user: JSON.parse(stored) })
+    }
+    return new HttpResponse(null, { status: 401 })
+  }),
+
+  http.post('/api/auth/logout', () => {
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/auth/token/refresh', () => {
+    return HttpResponse.json({ refreshed: true })
+  }),
+
+  http.post('/api/auth/send-verification-email', () => {
+    return HttpResponse.json({ message: 'Verification email sent.' }, { status: 200 })
   }),
 
   http.post('/api/auth/forgot-password', async () => {
@@ -58,21 +78,7 @@ export const handlers = [
     )
   }),
 
-  http.patch('/api/auth/update-email', async ({ request }) => {
-    const body = await request.json() as Record<string, string>
-    if (body.email === 'taken@example.com') {
-      return HttpResponse.json(
-        { email: ['Email already exists.'] },
-        { status: 400 },
-      )
-    }
-    return HttpResponse.json(
-      { message: `Email updated. Verification email sent to ${body.email}.` },
-      { status: 200 },
-    )
-  }),
-
-  http.get('/api/projects', ({ request }) => {
+  http.get('/api/projects/', ({ request }) => {
     const url = new URL(request.url)
     const search = url.searchParams.get('search')
     const projects = [
@@ -87,7 +93,7 @@ export const handlers = [
     return HttpResponse.json(projects)
   }),
 
-  http.post('/api/projects', async ({ request }) => {
+  http.post('/api/projects/', async ({ request }) => {
     const body = await request.json() as Record<string, string>
     if (!body.name?.trim()) {
       return HttpResponse.json({ name: ['This field is required.'] }, { status: 400 })
