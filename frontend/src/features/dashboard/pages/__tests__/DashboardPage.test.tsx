@@ -8,7 +8,6 @@ import { DashboardPage } from '../DashboardPage'
 
 function loginAs(overrides = {}) {
   const user = { id: 1, name: 'Imane Idrissi', email: 'imane@example.com', email_verified: false, avatar_color: '#6366f1', ...overrides }
-  localStorage.setItem('token', 'fake-jwt-token')
   localStorage.setItem('user', JSON.stringify(user))
 }
 
@@ -30,13 +29,13 @@ describe('DashboardPage', () => {
 
   it('shows email verification banner when unverified', () => {
     renderWithProviders(<DashboardPage />)
-    expect(screen.getByText('Your email is not verified. Check your spam folder.')).toBeInTheDocument()
+    expect(screen.getByText('Your email is not verified.')).toBeInTheDocument()
   })
 
   it('hides email verification banner when verified', () => {
     loginAs({ email_verified: true })
     renderWithProviders(<DashboardPage />)
-    expect(screen.queryByText('Your email is not verified. Check your spam folder.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Your email is not verified.')).not.toBeInTheDocument()
   })
 
   it('searches projects', async () => {
@@ -53,7 +52,7 @@ describe('DashboardPage', () => {
 
   it('shows empty state when no projects', async () => {
     server.use(
-      http.get('/api/projects', () => HttpResponse.json([])),
+      http.get('/api/projects/', () => HttpResponse.json([])),
     )
     renderWithProviders(<DashboardPage />)
     await waitFor(() => {
@@ -63,7 +62,7 @@ describe('DashboardPage', () => {
 
   it('shows no results message on empty search', async () => {
     server.use(
-      http.get('/api/projects', ({ request }) => {
+      http.get('/api/projects/', ({ request }) => {
         const url = new URL(request.url)
         if (url.searchParams.get('search')) return HttpResponse.json([])
         return HttpResponse.json([{ id: 1, name: 'Test', description: '', member_count: 1, created_at: '2026-01-01T00:00:00Z' }])
@@ -87,7 +86,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Log Out' }))
     await waitFor(() => {
-      expect(localStorage.getItem('token')).toBeNull()
+      expect(localStorage.getItem('user')).toBeNull()
     })
   })
 

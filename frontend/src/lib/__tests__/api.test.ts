@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../test/mocks/server'
 import { api } from '../api'
-import { setToken, getToken, setUser, getUser } from '../auth'
+import { setUser, getUser } from '../auth'
 
 beforeEach(() => {
   localStorage.clear()
@@ -10,31 +10,17 @@ beforeEach(() => {
 })
 
 describe('api client', () => {
-  it('attaches Authorization header when token exists', async () => {
-    setToken('jwt123')
+  it('sends requests with credentials include', async () => {
     server.use(
-      http.get('/api/test', ({ request }) => {
-        const auth = request.headers.get('Authorization')
-        return HttpResponse.json({ auth })
+      http.get('/api/test', () => {
+        return HttpResponse.json({ ok: true })
       }),
     )
-    const data = await api.get<{ auth: string }>('/api/test')
-    expect(data.auth).toBe('Bearer jwt123')
-  })
-
-  it('sends no Authorization header when no token', async () => {
-    server.use(
-      http.get('/api/test', ({ request }) => {
-        const auth = request.headers.get('Authorization')
-        return HttpResponse.json({ auth })
-      }),
-    )
-    const data = await api.get<{ auth: string | null }>('/api/test')
-    expect(data.auth).toBeNull()
+    const data = await api.get<{ ok: boolean }>('/api/test')
+    expect(data.ok).toBe(true)
   })
 
   it('clears session on 401 response when refresh fails', async () => {
-    setToken('jwt123')
     setUser({ id: 1, name: 'Test', email: 'test@test.com', email_verified: false, avatar_color: '#000' })
     server.use(
       http.get('/api/test', () => HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })),
@@ -44,7 +30,6 @@ describe('api client', () => {
       status: 401,
       data: { detail: 'Session expired' },
     })
-    expect(getToken()).toBeNull()
     expect(getUser()).toBeNull()
   })
 

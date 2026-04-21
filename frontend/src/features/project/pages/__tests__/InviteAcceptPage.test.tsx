@@ -30,7 +30,6 @@ describe('InviteAcceptPage', () => {
   })
 
   it('auto-joins when logged in', async () => {
-    localStorage.setItem('token', 'fake-jwt-token')
     localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Imane', email: 'imane@example.com', email_verified: true, avatar_color: '#6366f1' }))
     renderInvitePage()
     await waitFor(() => {

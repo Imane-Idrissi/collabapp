@@ -6,6 +6,8 @@ import { server } from '../../../../test/mocks/server'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { LoginPage } from '../LoginPage'
 
+const TEST_USER = { id: 1, name: 'Test', email: 'test@test.com', email_verified: false, avatar_color: '#000' }
+
 describe('LoginPage', () => {
   it('renders login form', () => {
     renderWithProviders(<LoginPage />)
@@ -70,8 +72,7 @@ describe('LoginPage', () => {
   })
 
   it('redirects to /dashboard if already logged in', () => {
-    localStorage.setItem('token', 'jwt123')
-    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Test', email: 'test@test.com', email_verified: false, avatar_color: '#000' }))
+    localStorage.setItem('user', JSON.stringify(TEST_USER))
     renderWithProviders(<LoginPage />)
     expect(window.location.pathname).toBe('/dashboard')
   })

@@ -6,13 +6,13 @@ import { LoadingSpinner } from '../../../shared/LoadingSpinner'
 
 export function InviteAcceptPage() {
   const { token } = useParams<{ token: string }>()
-  const { token: authToken } = useAuth()
+  const { user: authUser } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [isJoining, setIsJoining] = useState(false)
 
   useEffect(() => {
-    if (!authToken || !token) return
+    if (!authUser || !token) return
 
     async function joinProject() {
       setIsJoining(true)
@@ -26,14 +26,14 @@ export function InviteAcceptPage() {
       }
     }
     joinProject()
-  }, [authToken, token, navigate])
+  }, [authUser, token, navigate])
 
   if (isJoining) {
     return <LoadingSpinner />
   }
 
   // Not logged in
-  if (!authToken) {
+  if (!authUser) {
     // Store invite token for after auth
     if (token) {
       localStorage.setItem('pending_invite', token)

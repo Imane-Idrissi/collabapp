@@ -10,7 +10,7 @@ class TestCreateProject:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = '/api/projects'
+        self.url = '/api/projects/'
         self.user = User.objects.create_user(
             email='imane@example.com',
             name='Imane',
@@ -96,7 +96,7 @@ class TestListProjects:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = '/api/projects'
+        self.url = '/api/projects/'
         self.user = User.objects.create_user(
             email='imane@example.com',
             name='Imane',

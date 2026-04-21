@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import type { ApiError } from '../../../types'
 
 export function LoginPage() {
-  const { login, token } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,7 +12,7 @@ export function LoginPage() {
   const [generalError, setGeneralError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  if (token) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/dashboard" replace />
 
   function validate(): Record<string, string> {
     const errs: Record<string, string> = {}
@@ -35,7 +35,13 @@ export function LoginPage() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      navigate('/dashboard')
+      const pendingInvite = localStorage.getItem('pending_invite')
+      if (pendingInvite) {
+        localStorage.removeItem('pending_invite')
+        navigate(`/invite/${pendingInvite}`)
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: unknown) {
       const apiErr = err as { status?: number; data?: ApiError }
       if (apiErr.status === 401) {

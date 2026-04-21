@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { getToken, setToken, removeToken, getUser, setUser, removeUser } from '../auth'
+import { getUser, setUser, removeUser } from '../auth'
 import type { User } from '../../types'
 
 const testUser: User = {
@@ -11,23 +11,6 @@ const testUser: User = {
 }
 
 beforeEach(() => localStorage.clear())
-
-describe('token helpers', () => {
-  it('getToken returns null when empty', () => {
-    expect(getToken()).toBeNull()
-  })
-
-  it('setToken and getToken round-trip', () => {
-    setToken('jwt123')
-    expect(getToken()).toBe('jwt123')
-  })
-
-  it('removeToken clears token', () => {
-    setToken('jwt123')
-    removeToken()
-    expect(getToken()).toBeNull()
-  })
-})
 
 describe('user helpers', () => {
   it('getUser returns null when empty', () => {

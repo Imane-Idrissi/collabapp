@@ -35,7 +35,7 @@ describe('CreateProjectModal', () => {
 
   it('shows API field errors', async () => {
     server.use(
-      http.post('/api/projects', () =>
+      http.post('/api/projects/', () =>
         HttpResponse.json({ name: ['Name too long.'] }, { status: 400 }),
       ),
     )

@@ -6,7 +6,6 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import { ProjectPage } from '../ProjectPage'
 
 function loginAs() {
-  localStorage.setItem('token', 'fake-jwt-token')
   localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Imane', email: 'imane@example.com', email_verified: true, avatar_color: '#6366f1' }))
 }
 

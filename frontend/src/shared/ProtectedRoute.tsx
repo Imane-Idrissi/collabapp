@@ -3,13 +3,13 @@ import { useAuth } from '../features/auth/context/AuthContext'
 import { LoadingSpinner } from './LoadingSpinner'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token, isLoading } = useAuth()
+  const { user, isLoading } = useAuth()
 
   if (isLoading) {
     return <LoadingSpinner />
   }
 
-  if (!token) {
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 

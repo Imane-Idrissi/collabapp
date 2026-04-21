@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import type { ApiError } from '../../../types'
 
 export function SignupPage() {
-  const { signup, token } = useAuth()
+  const { signup, user } = useAuth()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -14,7 +14,7 @@ export function SignupPage() {
   const [generalError, setGeneralError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  if (token) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/dashboard" replace />
 
   function validate(): Record<string, string> {
     const errs: Record<string, string> = {}
@@ -41,7 +41,13 @@ export function SignupPage() {
     setIsSubmitting(true)
     try {
       await signup(name, email, password, confirmPassword)
-      navigate('/dashboard')
+      const pendingInvite = localStorage.getItem('pending_invite')
+      if (pendingInvite) {
+        localStorage.removeItem('pending_invite')
+        navigate(`/invite/${pendingInvite}`)
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: unknown) {
       const apiErr = err as { status?: number; data?: ApiError }
       if (apiErr.status === 400 && apiErr.data) {
