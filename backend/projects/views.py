@@ -30,14 +30,17 @@ from projects.serializers import (
 def _broadcast_board_event(project_id, event, payload):
     channel_layer = get_channel_layer()
     if channel_layer:
-        async_to_sync(channel_layer.group_send)(
-            f'chat_{project_id}',
-            {
-                'type': 'board.event',
-                'event': event,
-                'payload': payload,
-            },
-        )
+        try:
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{project_id}',
+                {
+                    'type': 'board.event',
+                    'event': event,
+                    'payload': payload,
+                },
+            )
+        except Exception:
+            logger.exception('Failed to broadcast board event')
 
 
 DEFAULT_COLUMNS = [

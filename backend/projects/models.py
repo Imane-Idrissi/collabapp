@@ -23,8 +23,11 @@ class Project(models.Model):
     def masked_gemini_key(self):
         if not self.encrypted_gemini_key:
             return ''
-        plaintext = decrypt_api_key(self.encrypted_gemini_key)
-        return f'····{plaintext[-4:]}' if len(plaintext) >= 4 else '····'
+        try:
+            plaintext = decrypt_api_key(self.encrypted_gemini_key)
+            return f'····{plaintext[-4:]}' if len(plaintext) >= 4 else '····'
+        except Exception:
+            return '····'
 
     def __str__(self):
         return self.name

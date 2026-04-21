@@ -323,6 +323,10 @@ class SendVerificationEmailView(APIView):
             send_verification_email(user, token.token)
         except Exception:
             logger.exception("Failed to send verification email")
+            return Response(
+                {'detail': 'Could not send verification email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response(
             {'message': 'Verification email sent.'},
             status=status.HTTP_200_OK,

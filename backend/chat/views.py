@@ -109,15 +109,18 @@ class MessageListCreateView(APIView):
 
         channel_layer = get_channel_layer()
         if channel_layer:
-            broadcast = serialized.copy()
-            broadcast['created_at'] = str(broadcast['created_at'])
-            async_to_sync(channel_layer.group_send)(
-                f'chat_{project_id}',
-                {
-                    'type': 'chat.message',
-                    'message': broadcast,
-                },
-            )
+            try:
+                broadcast = serialized.copy()
+                broadcast['created_at'] = str(broadcast['created_at'])
+                async_to_sync(channel_layer.group_send)(
+                    f'chat_{project_id}',
+                    {
+                        'type': 'chat.message',
+                        'message': broadcast,
+                    },
+                )
+            except Exception:
+                pass
 
         return Response(serialized, status=status.HTTP_201_CREATED)
 

@@ -224,7 +224,7 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 
 # Auth cookie settings
 AUTH_COOKIE_HTTPONLY = True
-AUTH_COOKIE_SAMESITE = 'Lax'
+AUTH_COOKIE_SAMESITE = os.environ.get('AUTH_COOKIE_SAMESITE', 'Lax')
 AUTH_COOKIE_SECURE = not DEBUG
 AUTH_COOKIE_PATH = '/'
 
