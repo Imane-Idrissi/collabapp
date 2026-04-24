@@ -24,9 +24,15 @@ export class WebSocketManager {
 
   connect() {
     this.closed = false
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
-    const url = `${protocol}//${host}/ws/chat/${this.options.projectId}/`
+    const apiUrl = import.meta.env.VITE_API_URL ?? ''
+    let url: string
+    if (apiUrl) {
+      const wsBase = apiUrl.replace(/^http/, 'ws')
+      url = `${wsBase}/ws/chat/${this.options.projectId}/`
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      url = `${protocol}//${window.location.host}/ws/chat/${this.options.projectId}/`
+    }
 
     this.ws = new WebSocket(url)
 
